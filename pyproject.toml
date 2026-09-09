@@ -22,6 +22,16 @@ venvPath = "."
 venv = ".venv"
 exclude = ["data", ".venv", "node_modules"]
 
+# Two quality regimes (decision 0003): experiments glue untyped libraries and raw
+# JSON together and stay on "standard"; application code is checked strictly.
+[[tool.pyright.executionEnvironments]]
+root = "apps"
+typeCheckingMode = "strict"
+
+[[tool.pyright.executionEnvironments]]
+root = "libs"
+typeCheckingMode = "strict"
+
 [tool.pytest.ini_options]
 testpaths = ["experiments", "libs", "apps"]
 addopts = "-q"

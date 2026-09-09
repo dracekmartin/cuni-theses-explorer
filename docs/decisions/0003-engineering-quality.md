@@ -21,8 +21,10 @@ The same checks run at two gates:
 
 Rules of the codebase:
 
-- All Python code carries type annotations. Pyright runs in standard mode and
-  application code has no untyped exceptions.
+- All Python code carries type annotations. Pyright checks `experiments/` in standard
+  mode (they glue untyped ML libraries and raw JSON, where strict checking would only
+  produce ignore comments) and `apps/` with `libs/` in strict mode, where data enters
+  through validated models and full type knowledge is realistic.
 - Tests use pytest: unit tests for pure logic, integration tests for pipeline steps
   and API endpoints. Test code follows the same style rules as the rest.
 - There are two quality regimes, defined in CLAUDE.md. `experiments/` are typed,
