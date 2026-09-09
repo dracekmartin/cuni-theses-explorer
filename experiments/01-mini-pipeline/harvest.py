@@ -116,17 +116,42 @@ def metadata_value(item: Any, key: str) -> str | None:
     return values[0] if values else None
 
 
-def pick_bitstream(item: Any, bundle: str, mime_type: str | None = None) -> Any | None:
-    """The largest bitstream of the given bundle, optionally restricted by MIME type."""
-    candidates = [
+def pick_thesis_files(item: Any) -> tuple[Any, Any | None] | None:
+    """Choose the thesis body among the item's PDFs, together with its paired text.
+
+    An item carries several PDFs: the thesis itself, abstracts, reviews, attachments.
+    Byte size is misleading (a scanned one-page attachment can be the largest file),
+    so the body is the PDF whose paired TEXT bitstream (named "<pdf>.txt") is largest;
+    the body is the file with the most text. Falls back to the largest PDF when the
+    item has no TEXT bitstreams. Returns None when there is no PDF at all.
+    """
+    bitstreams = item.get("bitstreams") or []
+    pdfs = [
         bitstream
-        for bitstream in item.get("bitstreams") or []
-        if bitstream.get("bundleName") == bundle
-        and (mime_type is None or bitstream.get("mimeType") == mime_type)
+        for bitstream in bitstreams
+        if bitstream.get("bundleName") == "ORIGINAL"
+        and bitstream.get("mimeType") == "application/pdf"
     ]
-    if not candidates:
+    if not pdfs:
         return None
-    return max(candidates, key=lambda bitstream: bitstream.get("sizeBytes") or 0)
+    texts = {
+        bitstream.get("name"): bitstream
+        for bitstream in bitstreams
+        if bitstream.get("bundleName") == "TEXT"
+    }
+
+    def paired_text(pdf: Any) -> Any | None:
+        return texts.get(f"{pdf.get('name')}.txt")
+
+    def paired_text_size(pdf: Any) -> int:
+        text = paired_text(pdf)
+        return int(text.get("sizeBytes") or 0) if text is not None else 0
+
+    if any(paired_text_size(pdf) for pdf in pdfs):
+        body = max(pdfs, key=paired_text_size)
+    else:
+        body = max(pdfs, key=lambda bitstream: bitstream.get("sizeBytes") or 0)
+    return body, paired_text(body)
 
 
 def download_bitstream(session: requests.Session, bitstream: Any, destination: Path) -> None:
@@ -153,9 +178,10 @@ def harvest_faculty(
         handle = item.get("handle")
         if not handle or handle in already_harvested:
             continue
-        pdf = pick_bitstream(item, "ORIGINAL", "application/pdf")
-        if pdf is None:
+        files = pick_thesis_files(item)
+        if files is None:
             continue
+        pdf, dspace_text = files
 
         record = ThesisRecord(
             handle=handle,
@@ -173,7 +199,6 @@ def harvest_faculty(
 
         download_bitstream(session, pdf, PDF_DIR / record.pdf_file)
 
-        dspace_text = pick_bitstream(item, "TEXT")
         if dspace_text is not None:
             text_name = f"{record.stem}.txt"
             download_bitstream(session, dspace_text, DSPACE_TEXT_DIR / text_name)
