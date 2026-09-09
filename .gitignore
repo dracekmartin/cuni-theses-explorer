@@ -1,0 +1,27 @@
+# Data experimentů a aplikace (PDF, texty, indexy, modely)
+data/*
+!data/.gitkeep
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+
+# Node
+node_modules/
+
+# Prostředí a tajemství
+.env
+.env.*
+
+# IDE a OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
