@@ -1,0 +1,7 @@
+# Runtime dependencies of the whole experiment (harvest, extract, index, search).
+requests>=2.32
+pypdf>=5.0
+sentence-transformers>=3.3
+rank_bm25>=0.2
+simplemma>=1.0
+numpy>=2.0
