@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import io
 import json
+import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -35,6 +37,12 @@ class ThesisRecord:
     def stem(self) -> str:
         """Filesystem-safe identifier derived from the handle."""
         return self.handle.replace("/", "_")
+
+
+def utf8_stdout() -> None:
+    """Force UTF-8 stdout, so Czech titles survive the default Windows console."""
+    if isinstance(sys.stdout, io.TextIOWrapper):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 
 def ensure_dirs() -> None:

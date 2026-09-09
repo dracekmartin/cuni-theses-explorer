@@ -26,6 +26,7 @@ from common import (
     append_record,
     ensure_dirs,
     load_manifest,
+    utf8_stdout,
 )
 
 DSPACE_BASE = "https://dspace.cuni.cz"
@@ -190,6 +191,7 @@ def main() -> None:
     parser.add_argument("--per-faculty", type=int, default=50)
     parser.add_argument("--faculty", action="append", help="faculty name, repeatable")
     args = parser.parse_args()
+    utf8_stdout()
     faculties: tuple[str, ...] = tuple(args.faculty) if args.faculty else DEFAULT_FACULTIES
 
     ensure_dirs()
