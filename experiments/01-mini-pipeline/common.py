@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import io
 import json
+import re
 import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
+
+from simplemma import lemmatize
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = REPO_ROOT / "data" / "01-mini-pipeline"
@@ -37,6 +40,18 @@ class ThesisRecord:
     def stem(self) -> str:
         """Filesystem-safe identifier derived from the handle."""
         return self.handle.replace("/", "_")
+
+
+WORD_PATTERN = re.compile(r"\w+", re.UNICODE)
+
+
+def lemma_tokens(text: str) -> list[str]:
+    """Lowercased, lemmatized word tokens for the lexical (BM25) branch.
+
+    Czech is tried first, English as the fallback, which matches the corpus. Both the
+    index and the query must go through this same function.
+    """
+    return [lemmatize(token, lang=("cs", "en")) for token in WORD_PATTERN.findall(text.lower())]
 
 
 def utf8_stdout() -> None:
