@@ -9,9 +9,10 @@ and ideation documents live in the sibling repo `dracekmartin/diplomkaManagement
 
 ## Repository map
 
-- `docs/`: use cases, architecture (with diagrams), ADRs
-- `docs/adr/`: architecture decision records, **the source of truth for decisions**.
-  Never contradict an ADR silently: change the ADR (or add a superseding one) first.
+- `docs/`: use cases, architecture (with diagrams), design decisions
+- `docs/decisions/`: design decision records, **the source of truth for decisions**.
+  Never contradict a recorded decision silently: change the record (or add a superseding
+  one) first.
 - `experiments/NN-name/`: self-contained experimental probes, numbered in order
 - `data/`: local experiment data (PDFs, extracted texts, indexes), git-ignored
 - `apps/`, `libs/`: (future) the real application code
@@ -21,10 +22,12 @@ and ideation documents live in the sibling repo `dracekmartin/diplomkaManagement
 - **Language:** everything in this repository is written in English: code, identifiers,
   comments, commits, and documents. The only exception is user-facing UI text of the
   application, which will be localized (Czech first).
-- **Writing style:** write like a person, not like a press release. Plain sentences,
-  concrete statements, no filler. Do not use em dashes anywhere in the repository;
-  restructure the sentence or use a comma, colon, or parentheses instead. If a sentence
-  sounds like generated boilerplate, rewrite it.
+- **Writing style:** applies to every piece of persistent text: documents, code
+  comments, commit messages, UI strings, log messages. Write like a person, not like
+  a press release. Plain sentences, concrete statements, no filler, no AI-flavored
+  rhetorical tics (such as "X matters:", "not just X, it's Y", "One shot, not a chat").
+  No em dashes anywhere; restructure the sentence or use a comma, colon, or parentheses.
+  If a sentence sounds like generated boilerplate, rewrite it.
 - **Commits:** Conventional Commits, `feat|fix|docs|chore|refactor|test|ci(scope): description`.
   Enforced by a pre-commit hook; run `pre-commit install` once after cloning.
 - **Naming:** domain terms are shared between code, diagrams and the thesis text
@@ -61,7 +64,7 @@ push autonomously.
 ## Maintenance rule
 
 Any commit that changes repository structure, conventions, or an architectural decision
-must update CLAUDE.md (and the relevant ADR) in the same commit. When `apps/` is created,
+must update CLAUDE.md (and the relevant decision record) in the same commit. When `apps/` is created,
 it gets its own subordinate CLAUDE.md.
 
 Keep this file short and dense. Every rule in it must be (a) not derivable from the

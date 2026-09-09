@@ -21,7 +21,7 @@ ways:
 
 | Path | Contents |
 |---|---|
-| `docs/` | use cases, architecture, ADRs (architecture decision records) |
+| `docs/` | use cases, architecture, design decision records |
 | `experiments/` | experimental probes (small-scale harvesting, indexing, search) |
 | `data/` | local experiment data (not versioned) |
 | `apps/` | *(later)* the application: pipeline, API, frontend |
