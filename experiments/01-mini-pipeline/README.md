@@ -30,7 +30,37 @@ extracted from the PDF (`dspace-text/`), and a metadata line in `manifest.jsonl`
 One request at a time with a fixed delay; safe to interrupt and re-run, already
 harvested theses are skipped.
 
-Other scripts (extract, index, search) arrive in the next commits.
+### extract.py
+
+```sh
+python experiments/01-mini-pipeline/extract.py [--force]
+```
+
+Extracts plain text from the harvested PDFs with pypdf into `extracted/` and writes
+per-thesis stats (pages, empty pages, characters, ratio against the DSpace TEXT bundle)
+into `extracted/extraction-stats.jsonl`. Already extracted theses are skipped.
+
+### build_index.py
+
+```sh
+python experiments/01-mini-pipeline/build_index.py [--model intfloat/multilingual-e5-small]
+```
+
+Splits extracted texts into chunks of about 1000 characters on sentence boundaries,
+embeds them (multilingual model, `passage:` prefix, normalized vectors, GPU when
+available) and lemmatizes them for BM25 (simplemma, Czech first, English fallback).
+Writes `index/`: `chunks.jsonl`, `embeddings.npy`, `tokens.jsonl`, `meta.json`.
+
+### search.py
+
+```sh
+python experiments/01-mini-pipeline/search.py "strategická videohra" [--top 5]
+```
+
+Prints three rankings for the query: lexical (BM25 over lemmatized tokens), semantic
+(cosine over chunk embeddings, `query:` prefix), and their reciprocal rank fusion.
+Chunks are ranked first and aggregate to theses by their best chunk; each result shows
+faculty, year, title and a snippet of the best matching chunk.
 
 ## Findings
 
