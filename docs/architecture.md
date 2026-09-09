@@ -66,7 +66,7 @@ flowchart LR
 The stores in the middle are logical; their physical layout (Postgres schemas, files)
 is under Storage. Builders read the vector index to compute their outputs; those read
 edges are omitted for legibility, the pipeline order implies them. Model backends are
-external systems behind small interfaces, not a component of ours (see Model providers).
+external systems reached through small interfaces (see Model providers).
 
 ## How a thesis gets in
 
@@ -100,8 +100,8 @@ The orchestration mechanism is deliberately undecided until the pipeline shape s
 1. The query runs through both branches of the hybrid search: the **semantic branch**
    embeds it (using the query prompt the active model requires) and searches the vector
    index; the **lexical branch** lemmatizes it and searches the lexical index. Lexical
-   matching without lemmatization is useless in Czech, which is why the lexical index
-   is a first-class citizen, not a legacy fallback.
+   matching without lemmatization is useless in Czech, so the lexical index needs
+   proper Czech analysis from the start.
 2. Reciprocal rank fusion merges the two chunk rankings, results aggregate to theses,
    metadata filters apply (UC3), snippets come from the matching chunks.
 3. Which sources run and how they combine is a **SearchStrategy**. A strategy references
@@ -112,8 +112,7 @@ The orchestration mechanism is deliberately undecided until the pipeline shape s
 
 ## Generated content
 
-Both generative features follow the same discipline: retrieve, generate, verify, and
-never show what did not pass verification.
+Both generative features follow the same sequence: retrieve, generate, verify.
 
 **Overview (UC8):**
 
@@ -140,7 +139,7 @@ never show what did not pass verification.
 4. Invalidation: a new version of either thesis drops the pair's cached explanations;
    switching the active search setup drops the whole cache.
 
-Cost therefore scales with what people actually view, never with corpus size.
+Cost therefore scales with what people actually view rather than with corpus size.
 
 ## Storage
 
@@ -155,7 +154,7 @@ One PostgreSQL instance with pgvector, split into schemas with single-writer own
 
 Extracted text stays in the database: about 20 GB for the whole university, and it
 belongs transactionally to metadata and indexes. The **PDF cache** is the one store
-outside the database: a filesystem cache, not an archive. The application never serves
+outside the database, and it is only a cache. The application never serves
 PDFs (results link to DSpace); local copies exist so extraction and chunking can be
 re-run without repeatedly downloading tens of thousands of files from a repository that
 already suffers under scraping traffic from others. Measured on a 549-document sample

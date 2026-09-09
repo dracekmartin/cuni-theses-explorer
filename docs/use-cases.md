@@ -25,7 +25,7 @@ texts are exposed) shape requirements but do not operate the system themselves.
 
 **Student** types a query in natural language, for example "conditional branching in C#".
 The system returns a ranked list of theses whose content matches the meaning of the
-query, not just its exact words. Each result links back to the thesis record in DSpace.
+query even when the wording differs. Each result links back to the thesis record in DSpace.
 
 Accepted when:
 
@@ -108,7 +108,7 @@ Accepted when:
 
 - Every claim in the summary is backed by a reference to a concrete thesis.
 - Referenced theses actually exist and are relevant to the question.
-- When the corpus has nothing to say, the system says so instead of improvising.
+- When the corpus has nothing to say, the system says so instead of making something up.
 
 ## UC9: Find a potential supervisor
 
