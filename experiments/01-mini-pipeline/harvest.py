@@ -55,7 +55,9 @@ def get_with_retries(
     for attempt in range(MAX_ATTEMPTS):
         time.sleep(REQUEST_DELAY_S)
         try:
-            response = session.get(url, params=params, timeout=300 if stream else 60, stream=stream)
+            response = session.get(
+                url, params=params, timeout=300 if stream else 120, stream=stream
+            )
         except requests.RequestException as error:
             last_error = error
         else:
