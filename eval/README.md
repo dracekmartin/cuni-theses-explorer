@@ -18,7 +18,8 @@ stay in `data/`, which is not versioned.
 
 | Version | State | Contents |
 | --- | --- | --- |
-| v1 | in preparation | about 1,000 theses sampled by department; known-item queries (layer 1); a pilot of judged topics (layer 2) |
+| v0 | pilot, in preparation | 592 theses: 25 departments of 6 faculties (drawn from the first 1,000 items of each faculty in API order), the theses of experiment 01 and one showcase thesis; 586 known-item queries (layer 1) written by gpt-oss-120b for 80 of them; judged topics (layer 2) to follow |
+| v1 | planned | about 1,000 theses sampled by department from the full catalog; known-item queries (layer 1); judged topics (layer 2) |
 
 ## Files of a version
 
