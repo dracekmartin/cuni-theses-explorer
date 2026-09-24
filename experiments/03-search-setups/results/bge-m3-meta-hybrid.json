@@ -1,0 +1,195 @@
+{
+  "experiment": "03-search-setups",
+  "setup": "bge-m3-meta-hybrid",
+  "description": "bge-m3-hybrid plus a Czech and an English metadata chunk per thesis (title, keywords, abstract).",
+  "run": "data/runs/03-search-setups/bge-m3-meta-hybrid.run",
+  "pipeline": {
+    "harvest": {
+      "source": "DSpace REST",
+      "corpus": "eval/v0"
+    },
+    "text_extraction": {
+      "method": "DSpace TEXT bundle"
+    },
+    "chunking": {
+      "max_chars": 1000,
+      "split": "sentence",
+      "metadata_chunk": true
+    },
+    "embedding": {
+      "model": "BAAI/bge-m3",
+      "query_prefix": "",
+      "passage_prefix": "",
+      "dtype": "float16",
+      "max_seq_length": 512
+    },
+    "lexical": {
+      "method": "BM25Okapi",
+      "lemmatizer": "simplemma cs, en"
+    },
+    "strategy": {
+      "sources": [
+        "lexical",
+        "semantic"
+      ],
+      "fusion": "rrf",
+      "k": 60,
+      "chunk_pool": 200
+    },
+    "reranking": null,
+    "aggregation": {
+      "method": "best chunk"
+    }
+  },
+  "cost": {
+    "hardware": "NVIDIA GeForce RTX 4050 Laptop GPU",
+    "index_seconds": 1513.0,
+    "chunks": 109590,
+    "query_ms_median": 227.3
+  },
+  "eval_version": "v0",
+  "metrics": {
+    "known_item": {
+      "all": {
+        "queries": 586,
+        "mrr@10": 0.9492,
+        "success@1": 0.9249,
+        "success@10": 0.9983,
+        "success@100": 1.0
+      },
+      "cross_lingual": {
+        "queries": 311,
+        "mrr@10": 0.9156,
+        "success@1": 0.8778,
+        "success@10": 0.9968,
+        "success@100": 1.0
+      },
+      "same_language": {
+        "queries": 275,
+        "mrr@10": 0.9871,
+        "success@1": 0.9782,
+        "success@10": 1.0,
+        "success@100": 1.0
+      },
+      "by_type": {
+        "title": {
+          "queries": 154,
+          "mrr@10": 0.9968,
+          "success@1": 0.9935,
+          "success@10": 1.0,
+          "success@100": 1.0
+        },
+        "about-short": {
+          "queries": 114,
+          "mrr@10": 0.9912,
+          "success@1": 0.9825,
+          "success@10": 1.0,
+          "success@100": 1.0
+        },
+        "about-sentence": {
+          "queries": 158,
+          "mrr@10": 1.0,
+          "success@1": 1.0,
+          "success@10": 1.0,
+          "success@100": 1.0
+        },
+        "detail": {
+          "queries": 160,
+          "mrr@10": 0.8233,
+          "success@1": 0.7438,
+          "success@10": 0.9938,
+          "success@100": 1.0
+        }
+      },
+      "by_lang": {
+        "cs->cs": {
+          "queries": 153,
+          "mrr@10": 0.9834,
+          "success@1": 0.9739,
+          "success@10": 1.0,
+          "success@100": 1.0
+        },
+        "cs->en": {
+          "queries": 109,
+          "mrr@10": 0.9213,
+          "success@1": 0.8899,
+          "success@10": 0.9908,
+          "success@100": 1.0
+        },
+        "cs->sk": {
+          "queries": 21,
+          "mrr@10": 0.8492,
+          "success@1": 0.7619,
+          "success@10": 1.0,
+          "success@100": 1.0
+        },
+        "en->cs": {
+          "queries": 152,
+          "mrr@10": 0.924,
+          "success@1": 0.8882,
+          "success@10": 1.0,
+          "success@100": 1.0
+        },
+        "en->en": {
+          "queries": 114,
+          "mrr@10": 0.9912,
+          "success@1": 0.9825,
+          "success@10": 1.0,
+          "success@100": 1.0
+        },
+        "en->sk": {
+          "queries": 29,
+          "mrr@10": 0.8986,
+          "success@1": 0.8621,
+          "success@10": 1.0,
+          "success@100": 1.0
+        },
+        "sk->sk": {
+          "queries": 8,
+          "mrr@10": 1.0,
+          "success@1": 1.0,
+          "success@10": 1.0,
+          "success@100": 1.0
+        }
+      }
+    },
+    "topic": {
+      "all": {
+        "queries": 12,
+        "ndcg@10": 0.7,
+        "p@10": 0.55,
+        "recall@100": 0.9353,
+        "judged@10": 1.0
+      }
+    },
+    "consistency": {
+      "all": {
+        "rbo": 0.4529,
+        "groups": 296
+      },
+      "by_type": {
+        "about-sentence": {
+          "rbo": 0.4588,
+          "groups": 79
+        },
+        "about-short": {
+          "rbo": 0.4827,
+          "groups": 57
+        },
+        "detail": {
+          "rbo": 0.3947,
+          "groups": 80
+        },
+        "title": {
+          "rbo": 0.4894,
+          "groups": 74
+        },
+        "topic": {
+          "rbo": 0.4192,
+          "groups": 6
+        }
+      }
+    }
+  },
+  "scored_at": "2026-09-24"
+}

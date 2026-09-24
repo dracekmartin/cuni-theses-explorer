@@ -4,8 +4,8 @@ Which fixed corpus, queries and relevance judgments let us compare search setups
 other and with the current DSpace search? The experiment builds the pilot version `v0` of
 the set in [eval/](../../eval/README.md).
 
-Running (layer 2), 2026-09-24. Corpus: 592 theses. Builds on: experiment 01. LLM:
-`gpt-oss-120b` on e-INFRA CZ.
+Done except the human check of layer 2, 2026-09-24. Corpus: 592 theses. Builds on:
+experiment 01. LLM: `gpt-oss-120b` on e-INFRA CZ.
 
 | Query type | Queries | Written from | Tests |
 | --- | --- | --- | --- |
@@ -30,6 +30,14 @@ across languages. A first limit of 50 % title words removed natural questions on
 is strong and would have inflated the advantage of semantic search; the final limit drops
 only near copies of the title (above 80 %). Even so the pilot set is easy: BM25 alone finds
 90 % of the targets in the top 10, and version v1 needs a larger or denser corpus.
+
+For the 6 topics, the top 20 of the seven setups of experiment 03 pooled 276 theses (38 to
+63 per topic), which covers the whole top 10 of every setup. The LLM graded 16 of them as
+relevant, 49 as partially relevant and 211 as not relevant; the topic on neural machine
+translation got no relevant thesis at all, although the corpus holds 24 theses of the
+institute of formal and applied linguistics. A blind sample of 30 pairs for a human check
+is prepared in `data/eval-v0/validation.md`; until it is graded, topic scores rest on the
+LLM alone.
 
 Reproduce: `build_pilot_corpus.py`, `generate_queries.py` and `topics.py add`, then the
 setups of experiment 03, then `topics.py judge` (needs `EINFRA_API_KEY` in `.env`).
