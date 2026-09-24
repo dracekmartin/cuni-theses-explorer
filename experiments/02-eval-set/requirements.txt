@@ -1,0 +1,2 @@
+# Runtime dependencies of the evaluation set scripts.
+requests>=2.32
