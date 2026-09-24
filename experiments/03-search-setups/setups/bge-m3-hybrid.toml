@@ -1,0 +1,24 @@
+name = "bge-m3-hybrid"
+description = "01-baseline with BGE-M3 instead of e5-small in the semantic branch."
+
+[chunking]
+max_chars = 1000
+split = "sentence"
+metadata_chunk = false
+
+[embedding]
+model = "BAAI/bge-m3"
+query_prefix = ""
+passage_prefix = ""
+dtype = "float16"
+max_seq_length = 512
+
+[lexical]
+method = "BM25Okapi"
+lemmatizer = "simplemma cs, en"
+
+[strategy]
+sources = ["lexical", "semantic"]
+fusion = "rrf"
+k = 60
+chunk_pool = 200

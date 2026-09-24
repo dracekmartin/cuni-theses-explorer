@@ -1,0 +1,29 @@
+name = "bge-m3-meta-rerank"
+description = "bge-m3-meta-hybrid with the top 50 fused chunks rescored by a cross-encoder."
+
+[chunking]
+max_chars = 1000
+split = "sentence"
+metadata_chunk = true
+
+[embedding]
+model = "BAAI/bge-m3"
+query_prefix = ""
+passage_prefix = ""
+dtype = "float16"
+max_seq_length = 512
+
+[lexical]
+method = "BM25Okapi"
+lemmatizer = "simplemma cs, en"
+
+[strategy]
+sources = ["lexical", "semantic"]
+fusion = "rrf"
+k = 60
+chunk_pool = 200
+
+[reranking]
+model = "BAAI/bge-reranker-v2-m3"
+candidates = 50
+max_length = 512

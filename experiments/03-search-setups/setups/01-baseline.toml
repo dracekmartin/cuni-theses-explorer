@@ -1,0 +1,24 @@
+name = "01-baseline"
+description = "The setup of experiment 01, unchanged: e5-small and BM25 fused by RRF."
+
+[chunking]
+max_chars = 1000
+split = "sentence"
+metadata_chunk = false
+
+[embedding]
+model = "intfloat/multilingual-e5-small"
+query_prefix = "query: "
+passage_prefix = "passage: "
+dtype = "float32"
+max_seq_length = 512
+
+[lexical]
+method = "BM25Okapi"
+lemmatizer = "simplemma cs, en"
+
+[strategy]
+sources = ["lexical", "semantic"]
+fusion = "rrf"
+k = 60
+chunk_pool = 200

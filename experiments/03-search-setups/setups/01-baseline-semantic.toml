@@ -1,0 +1,18 @@
+name = "01-baseline-semantic"
+description = "Semantic branch of 01-baseline alone: e5-small."
+
+[chunking]
+max_chars = 1000
+split = "sentence"
+metadata_chunk = false
+
+[embedding]
+model = "intfloat/multilingual-e5-small"
+query_prefix = "query: "
+passage_prefix = "passage: "
+dtype = "float32"
+max_seq_length = 512
+
+[strategy]
+sources = ["semantic"]
+chunk_pool = 200

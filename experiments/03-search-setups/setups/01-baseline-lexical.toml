@@ -1,0 +1,15 @@
+name = "01-baseline-lexical"
+description = "Lexical branch of 01-baseline alone: BM25 over simplemma lemmas."
+
+[chunking]
+max_chars = 1000
+split = "sentence"
+metadata_chunk = false
+
+[lexical]
+method = "BM25Okapi"
+lemmatizer = "simplemma cs, en"
+
+[strategy]
+sources = ["lexical"]
+chunk_pool = 200
