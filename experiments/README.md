@@ -7,8 +7,8 @@ answered before code goes into `apps/` or `libs/`. Every README follows
 | Experiment | Question | Status |
 | --- | --- | --- |
 | [01-mini-pipeline](01-mini-pipeline/README.md) | Does a first end-to-end pipeline work on real DSpace data, and how do lexical and semantic search behave on it? | done, 2026-09-09 |
-| 02-eval-set | Which fixed corpus, queries and relevance judgments let us compare search setups with each other and with the current DSpace search? | planned |
-| 03-search-setups | Which embedding model and which extra steps (metadata chunk, reranking, query prompt) improve on the setup of experiment 01? | planned |
+| [02-eval-set](02-eval-set/README.md) | Which fixed corpus, queries and relevance judgments let us compare search setups with each other and with the current DSpace search? | running |
+| [03-search-setups](03-search-setups/README.md) | Which embedding model and which extra steps (a metadata chunk, reranking) improve on the setup of experiment 01? | running |
 
 ## Comparing experiments
 
