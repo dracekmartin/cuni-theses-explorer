@@ -19,10 +19,14 @@ jobs:
       - name: Install dev tooling
         run: pip install -r requirements-dev.txt
 
-      - name: Install experiment dependencies (for typechecking)
+      - name: Install experiment and evaluation dependencies (for typechecking)
         run: |
           pip install torch --index-url https://download.pytorch.org/whl/cpu
-          pip install -r experiments/01-mini-pipeline/requirements.txt
+          for requirements in experiments/*/requirements.txt eval/requirements.txt; do
+            if [ -f "$requirements" ]; then
+              pip install -r "$requirements"
+            fi
+          done
 
       - name: Format check (ruff)
         run: ruff format --check .
