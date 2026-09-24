@@ -1,0 +1,19 @@
+Below is the metadata of one thesis. Write the queries a student would type into the search box of the university thesis repository when looking for work on exactly this topic, without knowing that this thesis exists.
+
+Rules:
+- Describe the topic in your own words. Do not copy the title and avoid its distinctive words, unless there is no other natural way to name the topic.
+- "short": 2 to 6 words, like a typical search box query.
+- "sentence": one natural sentence or question, at most 20 words.
+- Write every query in Czech ("cs") and in English ("en"). Both versions must mean the same.
+- No names of the author, the supervisor or other private persons, no years, no faculty or department names. Names of well-known historical figures, works or methods are fine when the topic is about them.
+- The query must be specific enough that this thesis is a strong match, and it must not paraphrase a single sentence of the abstract.
+
+Answer with JSON only, in this form:
+{"short": {"cs": "...", "en": "..."}, "sentence": {"cs": "...", "en": "..."}}
+
+Title: $title
+Translated title: $title_translated
+Keywords (cs): $keywords_cs
+Keywords (en): $keywords_en
+Abstract (cs): $abstract_cs
+Abstract (en): $abstract_en

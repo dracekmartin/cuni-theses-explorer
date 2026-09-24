@@ -1,2 +1,4 @@
 # Runtime dependencies of the evaluation set scripts.
 requests>=2.32
+openai>=1.50
+simplemma>=1.0

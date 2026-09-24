@@ -1,0 +1,16 @@
+Below is one passage from the body of a thesis. Write the query a student would type when looking for a thesis that discusses the specific content of this passage (a method, a finding, a dataset, a case, an argument), not the general topic of the thesis.
+
+Rules:
+- The passage must answer the query, and the query must be specific to it.
+- Use your own words, do not copy phrases from the passage.
+- 3 to 12 words.
+- Write the query in Czech ("cs") and in English ("en"). Both versions must mean the same.
+- No names of private persons, no page, chapter or figure numbers. Names of well-known historical figures, works or methods are fine.
+- If the passage has no specific content (table of contents, references, acknowledgements, only formulas or numbers, formal boilerplate), answer {"skip": true}.
+
+Answer with JSON only, in one of these forms:
+{"detail": {"cs": "...", "en": "..."}}
+{"skip": true}
+
+Passage:
+$passage
