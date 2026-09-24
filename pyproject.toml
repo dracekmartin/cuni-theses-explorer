@@ -33,5 +33,5 @@ root = "libs"
 typeCheckingMode = "strict"
 
 [tool.pytest.ini_options]
-testpaths = ["experiments", "libs", "apps"]
+testpaths = ["experiments", "eval", "libs", "apps"]
 addopts = "-q"

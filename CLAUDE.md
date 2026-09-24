@@ -13,8 +13,11 @@ and ideation documents live in the sibling repo `dracekmartin/diplomkaManagement
 - `docs/decisions/`: design decision records, **the source of truth for decisions**.
   Never contradict a recorded decision silently: change the record (or add a superseding
   one) first.
-- `experiments/NN-name/`: self-contained experimental probes, numbered in order
-- `data/`: local experiment data (PDFs, extracted texts, indexes), git-ignored
+- `experiments/NN-name/`: self-contained experimental probes, numbered in order; each
+  README follows `experiments/TEMPLATE.md`
+- `eval/`: versioned evaluation data (corpus, queries, relevance judgments) and the
+  scorer, see `eval/README.md`
+- `data/`: local experiment data (PDFs, extracted texts, indexes, runs), git-ignored
 - `apps/`, `libs/`: (future) the real application code
 
 ## Conventions
@@ -33,6 +36,10 @@ and ideation documents live in the sibling repo `dracekmartin/diplomkaManagement
 - **Naming:** domain terms are shared between code, diagrams and the thesis text
   (Thesis, Chunk, EmbeddingProvider, SearchStrategy, TopicMap, Overview). Introduce new
   domain terms consciously and document them in `docs/architecture.md`.
+- **Evaluation:** experiments do not compute retrieval metrics themselves. Each search
+  setup writes a TREC run and `eval/score.py` scores it against a version in `eval/`;
+  every result names that version. A version is frozen once a result has been reported
+  against it, and changes make a new version.
 
 ## Quality gates
 
@@ -50,6 +57,8 @@ pytest
 - `experiments/` is a lightweight regime: single-purpose scripts, typed, cleanly named
   and structured into functions, but without the full test apparatus. They are probes,
   not products. They are still visible in the repo, so keep them presentable.
+- `eval/` follows the experiments regime, except that its metric code has unit tests,
+  because every comparison in the thesis depends on it.
 - `apps/` and `libs/` (once they exist) are the full regime: tests required, public
   interfaces documented, modularity per the architecture doc. Anything from
   `experiments/` that proves permanent gets rewritten into `libs/` properly.
