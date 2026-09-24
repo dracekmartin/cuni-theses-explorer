@@ -48,9 +48,12 @@ TARGETS = 80
 LANGUAGE_QUOTAS = {"cs": 40, "en": 30, "sk": 10}
 FACULTY_CAP = 20
 MIN_TEXT_CHARS = 20_000
-# Largest share of a query's words that may come from the title. A short query cannot
-# name a specific topic without the topic's own words, so only a near copy is dropped.
-MAX_COPY_SHARE = {"about-short": 0.8, "about-sentence": 0.5}
+# Largest share of a query's words that may come from the title. Only a near copy is
+# dropped: a stricter limit removes natural queries that name the topic in the title's
+# words, and with them exactly the queries where lexical search is strong.
+MAX_COPY_SHARE = 0.8
+# Hyphen, non-breaking hyphen and en dash: a model writes them, a user types "-".
+TYPED_FORMS = str.maketrans({chr(0x2010): "-", chr(0x2011): "-", chr(0x2013): "-"})
 # e-INFRA allows 4 parallel requests per key; half of it leaves room for retries.
 WORKERS = 2
 ATTEMPTS = 3
@@ -229,7 +232,7 @@ def query(number: int, kind: str, lang: str, text: str, thesis: Thesis) -> dict[
         "group": group,
         "lang": lang,
         "type": kind,
-        "text": " ".join(text.split()),
+        "text": " ".join(text.translate(TYPED_FORMS).split()),
         "target": thesis.handle,
         "target_lang": thesis.language,
         "narrative": None,
@@ -264,7 +267,7 @@ def generated_queries(
         for key, kind in (("short", "about-short"), ("sentence", "about-sentence")):
             pair = about[key]
             share = max(copy_share(pair["cs"], thesis), copy_share(pair["en"], thesis))
-            if share > MAX_COPY_SHARE[kind]:
+            if share > MAX_COPY_SHARE:
                 dropped[kind] += 1
                 continue
             queries += [query(number, kind, lang, pair[lang], thesis) for lang in ("cs", "en")]
