@@ -1,0 +1,38 @@
+[
+  {
+    "id": "topic-01",
+    "cs": "prevence užívání návykových látek u dospívajících",
+    "en": "prevention of substance use among adolescents",
+    "narrative": "Relevant (2): prevention programmes, risk and protective factors, or interventions concerning alcohol, tobacco or drug use by adolescents. Partially relevant (1): substance use by adults, or risky behaviour of adolescents that does not involve substances."
+  },
+  {
+    "id": "topic-02",
+    "cs": "ochrana zaměstnance při výpovědi z pracovního poměru",
+    "en": "employee protection against dismissal",
+    "narrative": "Relevant (2): legal regulation of the termination of employment, grounds for notice, protection against dismissal, severance pay. Partially relevant (1): other topics of labour law, such as working time or discrimination at work."
+  },
+  {
+    "id": "topic-03",
+    "cs": "neuronový strojový překlad",
+    "en": "neural machine translation",
+    "narrative": "Relevant (2): theses that build or evaluate neural machine translation systems. Partially relevant (1): other natural language processing tasks solved with neural networks, or machine translation without neural methods."
+  },
+  {
+    "id": "topic-04",
+    "cs": "ruská zahraniční politika vůči postsovětským státům",
+    "en": "Russian foreign policy towards post-Soviet states",
+    "narrative": "Relevant (2): Russian policy towards Ukraine, Georgia, Belarus, the Baltic states or Central Asia. Partially relevant (1): Russian domestic politics, or the policy of the EU or NATO in the region."
+  },
+  {
+    "id": "topic-05",
+    "cs": "stárnutí populace v Česku",
+    "en": "population ageing in Czechia",
+    "narrative": "Relevant (2): demographic ageing in Czechia, its causes, consequences and projections. Partially relevant (1): other demographic topics in Czechia, such as fertility or migration, or population ageing in other countries."
+  },
+  {
+    "id": "topic-06",
+    "cs": "automatické testování a verifikace programů",
+    "en": "automated testing and verification of programs",
+    "narrative": "Relevant (2): methods or tools for testing, static analysis, model checking or formal verification of programs. Partially relevant (1): software quality or the development process without own methods of testing or verification."
+  }
+]

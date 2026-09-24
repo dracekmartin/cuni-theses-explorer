@@ -1,0 +1,20 @@
+Judge whether a thesis is relevant to a search topic. Use only the information given below.
+
+Topic (cs): $topic_cs
+Topic (en): $topic_en
+What counts as relevant: $narrative
+
+Thesis:
+Title: $title
+Translated title: $title_translated
+Keywords: $keywords
+Abstract (cs): $abstract_cs
+Abstract (en): $abstract_en
+
+Grades:
+2 = relevant: the thesis is about the topic.
+1 = partially relevant: the thesis touches the topic or covers a part of it, as the description of relevance says.
+0 = not relevant.
+
+Answer with JSON only, in this form:
+{"grade": 0, "reason": "one short sentence"}

@@ -293,6 +293,19 @@ def generated_queries(
     return queries, dropped
 
 
+def kept_topics() -> tuple[list[dict[str, Any]], list[str]]:
+    """Topic queries and their judgments already in the set; topics.py owns them."""
+    queries_path, qrels_path = EVAL_DIR / "queries.jsonl", EVAL_DIR / "qrels.txt"
+    if not queries_path.exists():
+        return [], []
+    with queries_path.open(encoding="utf-8") as file:
+        items = [json.loads(line) for line in file if line.strip()]
+    topics = [item for item in items if item["type"] == "topic"]
+    ids = {item["id"] for item in topics}
+    lines = qrels_path.read_text(encoding="utf-8").splitlines() if qrels_path.exists() else []
+    return topics, [line for line in lines if line.strip() and line.split()[0] in ids]
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--limit", type=int, help="only the first N targets, for a check run")
@@ -332,12 +345,14 @@ def main() -> None:
     dropped = sum((counts for _, counts in generated), Counter())
 
     EVAL_DIR.mkdir(parents=True, exist_ok=True)
+    topics, topic_qrels = kept_topics()
     with (EVAL_DIR / "queries.jsonl").open("w", encoding="utf-8") as file:
-        for item in queries:
+        for item in queries + topics:
             file.write(json.dumps(item, ensure_ascii=False) + "\n")
     with (EVAL_DIR / "qrels.txt").open("w", encoding="utf-8") as file:
         for item in queries:
             file.write(f"{item['id']} 0 {item['target']} 2\n")
+        file.writelines(f"{line}\n" for line in topic_qrels)
     (DATA_DIR / "targets.json").write_text(
         json.dumps([thesis.handle for thesis in targets], indent=1), encoding="utf-8"
     )
