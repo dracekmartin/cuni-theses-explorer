@@ -20,6 +20,7 @@ from metrics import randomization_test
 from score import (
     KNOWN_ITEM_TYPES,
     REPO_ROOT,
+    judged_topics,
     load_qrels,
     load_queries,
     load_run,
@@ -78,7 +79,7 @@ def main() -> None:
     known = [query for query in queries if query["type"] in KNOWN_ITEM_TYPES]
     known_ids = [query["id"] for query in known]
     cross_ids = [query["id"] for query in known if query["lang"] != query["target_lang"]]
-    topic_ids = [query["id"] for query in queries if query["type"] not in KNOWN_ITEM_TYPES]
+    topic_ids = judged_topics(queries, qrels)
 
     setups: list[tuple[str, dict[str, Any], PerQuery]] = []
     for path in args.results:

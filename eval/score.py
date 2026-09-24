@@ -116,11 +116,21 @@ def consistency(queries: list[dict[str, Any]], run: dict[str, list[str]]) -> dic
     }
 
 
+def judged_topics(queries: list[dict[str, Any]], qrels: dict[str, dict[str, int]]) -> list[str]:
+    """Topic queries that have judgments; a topic without any cannot be scored yet."""
+    return [
+        query["id"]
+        for query in queries
+        if query["type"] not in KNOWN_ITEM_TYPES and qrels.get(query["id"])
+    ]
+
+
 def score(version: str, run: dict[str, list[str]]) -> dict[str, Any]:
     queries = load_queries(version)
-    values = per_query(queries, load_qrels(version), run)
+    qrels = load_qrels(version)
+    values = per_query(queries, qrels, run)
     known = [query for query in queries if query["type"] in KNOWN_ITEM_TYPES]
-    topics = [query["id"] for query in queries if query["type"] not in KNOWN_ITEM_TYPES]
+    topics = judged_topics(queries, qrels)
 
     def ids(selected: list[dict[str, Any]]) -> list[str]:
         return [query["id"] for query in selected]
