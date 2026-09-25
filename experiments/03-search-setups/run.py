@@ -7,6 +7,7 @@ the pipeline and cost. Metrics are added afterwards by eval/score.py.
 
 Usage:
     python experiments/03-search-setups/run.py setups/01-baseline.toml [--version v0]
+    python experiments/03-search-setups/run.py setups/bge-m3-semantic.toml --query "..."
 """
 
 from __future__ import annotations
@@ -83,13 +84,18 @@ def describe(setup: dict[str, Any], version: str) -> dict[str, Any]:
     }
 
 
-def run(setup_path: Path, version: str) -> None:
+def run(setup_path: Path, version: str, texts: list[str] | None = None, top: int = 10) -> None:
+    """Answer the query set of the version and write the run, or only print answers to
+    `texts` when given."""
     setup = tomllib.loads(setup_path.read_text(encoding="utf-8"))
     name = setup["name"]
     strategy = setup["strategy"]
     sources: list[str] = strategy["sources"]
     corpus = load_corpus(version)
-    queries = load_queries(version)
+    if texts is None:
+        queries = load_queries(version)
+    else:
+        queries = [{"id": f"q{number}", "text": text} for number, text in enumerate(texts, 1)]
     print(f"{name}: {len(corpus)} theses, {len(queries)} queries, sources {sources}")
 
     body, meta = build_chunks(version, corpus, setup["chunking"].get("metadata_chunk", False))
@@ -148,32 +154,50 @@ def run(setup_path: Path, version: str) -> None:
             model_kwargs={"torch_dtype": torch.float16},
         )
 
+    answers: list[list[tuple[str, float]]] = []
+    latencies: list[float] = []
+    for position, query in enumerate(queries):
+        started = time.monotonic()
+        rankings = []
+        if bm25 is not None:
+            rankings.append(lexical_ranking(bm25, query["text"], strategy["chunk_pool"]))
+        if query_scores is not None:
+            scores = semantic_matrix @ query_scores[position]
+            rankings.append(semantic_ranking(scores, strategy["chunk_pool"]))
+        ranking = rankings[0] if len(rankings) == 1 else fuse_rrf(rankings, strategy["k"])
+        if reranker is not None and reranking:
+            ranking = rerank(reranker, query["text"], ranking, chunk_texts, reranking["candidates"])
+        answers.append(to_theses(ranking, chunk_handles, RESULTS_PER_QUERY))
+        latencies.append((time.monotonic() - started) * 1000 + encode_ms)
+        if (position + 1) % 100 == 0:
+            print(f"queries: {position + 1}/{len(queries)}")
+
+    if texts is not None:
+        print_answers(corpus, texts, answers, top)
+        return
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
     run_path = RUNS_DIR / f"{name}.run"
-    latencies: list[float] = []
     with run_path.open("w", encoding="utf-8") as run_file:
-        for position, query in enumerate(queries):
-            started = time.monotonic()
-            rankings = []
-            if bm25 is not None:
-                rankings.append(lexical_ranking(bm25, query["text"], strategy["chunk_pool"]))
-            if query_scores is not None:
-                scores = semantic_matrix @ query_scores[position]
-                rankings.append(semantic_ranking(scores, strategy["chunk_pool"]))
-            ranking = rankings[0] if len(rankings) == 1 else fuse_rrf(rankings, strategy["k"])
-            if reranker is not None and reranking:
-                ranking = rerank(
-                    reranker, query["text"], ranking, chunk_texts, reranking["candidates"]
-                )
-            theses = to_theses(ranking, chunk_handles, RESULTS_PER_QUERY)
-            latencies.append((time.monotonic() - started) * 1000 + encode_ms)
+        for query, theses in zip(queries, answers, strict=True):
             for rank, (handle, score) in enumerate(theses, start=1):
                 run_file.write(f"{query['id']} Q0 {handle} {rank} {score:.6f} {name}\n")
-            if (position + 1) % 100 == 0:
-                print(f"queries: {position + 1}/{len(queries)}")
-
     write_results(setup, version, run_path, chunks, latencies)
     print(f"run written to {run_path.relative_to(EXPERIMENT_DIR.parents[1])}")
+
+
+def print_answers(
+    corpus: list[dict[str, Any]],
+    texts: list[str],
+    answers: list[list[tuple[str, float]]],
+    top: int,
+) -> None:
+    records = {record["handle"]: record for record in corpus}
+    for text, theses in zip(texts, answers, strict=True):
+        print(f"\n=== {text}")
+        for rank, (handle, _) in enumerate(theses[:top], start=1):
+            record = records[handle]
+            year = (record.get("year") or "?")[:4]
+            print(f"{rank:3d}. [{record.get('language')}, {year}] {record['title']} ({handle})")
 
 
 def write_results(
@@ -215,10 +239,14 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("setup", type=Path, help="setup file, relative to the experiment")
     parser.add_argument("--version", default="v0")
+    parser.add_argument(
+        "--query", action="append", help="print the answer to this query instead, repeatable"
+    )
+    parser.add_argument("--top", type=int, default=10, help="theses printed per --query")
     args = parser.parse_args()
     utf8_stdout()
     setup_path = args.setup if args.setup.is_absolute() else EXPERIMENT_DIR / args.setup
-    run(setup_path, args.version)
+    run(setup_path, args.version, args.query, args.top)
 
 
 if __name__ == "__main__":
