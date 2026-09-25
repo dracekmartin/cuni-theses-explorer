@@ -28,7 +28,8 @@ the small model blurs.
 BGE-M3 is the largest step. It lifts MRR@10 from 0.870 to 0.967, `detail` queries in the
 other language from 0.670 (e5-small) to 0.989, and topics from 0.630 to 0.758, and it
 returns similar results for the Czech and the English version of a query (RBO 0.666 against
-0.349).
+0.349). All 28 known-item queries on which experiment 01 missed the top 5 and BGE-M3 ranked
+the target first cross languages; in the same language there is no such query.
 
 BM25 fused with equal weight makes BGE-M3 worse (MRR@10 0.908, topics 0.663), most of all on
 `detail` queries. The metadata chunk wins back part of it, but only on `title` and `about`
