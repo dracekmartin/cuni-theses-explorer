@@ -17,8 +17,11 @@ from __future__ import annotations
 
 import argparse
 import gc
+import html
 import json
+import shutil
 import statistics
+import textwrap
 import time
 import tomllib
 from pathlib import Path
@@ -45,7 +48,7 @@ from rank_bm25 import BM25Okapi
 from ranking import fuse_rrf, lexical_ranking, rerank, semantic_ranking, to_theses
 
 RESULTS_PER_QUERY = 100
-TITLE_CHARS = 48
+MAX_TITLE_LINES = 4
 Ranking = list[tuple[str, float]]
 
 
@@ -215,24 +218,33 @@ def ask(setup_paths: list[Path], version: str, texts: list[str], top: int) -> No
             for rank, (handle, _) in enumerate(columns[0][1][number][:top], start=1):
                 record = records[handle]
                 year = (record.get("year") or "?")[:4]
-                print(f"{rank:3d}. [{record.get('language')}, {year}] {record['title']} ({handle})")
+                title = html.unescape(record["title"])
+                print(f"{rank:3d}. [{record.get('language')}, {year}] {title} ({handle})")
             continue
-        width = TITLE_CHARS + 2
-        print("     " + "".join(f"{name:<{width}}" for name, _ in columns).rstrip())
+        width = column_width(len(columns))
+        print("      " + "".join(f"{name:<{width + 2}}" for name, _ in columns).rstrip())
         for rank in range(top):
-            cells = []
+            cells: list[list[str]] = []
             for _, answers in columns:
                 theses = answers[number]
-                cell = ""
+                lines: list[str] = []
                 if rank < len(theses):
                     record = records[theses[rank][0]]
-                    cell = shorten(f"[{record.get('language')}] {record['title']}", TITLE_CHARS)
-                cells.append(f"{cell:<{width}}")
-            print(f"{rank + 1:3d}. " + "".join(cells).rstrip())
+                    title = f"[{record.get('language')}] {html.unescape(record['title'])}"
+                    lines = textwrap.wrap(
+                        title, width, max_lines=MAX_TITLE_LINES, placeholder=" ..."
+                    )
+                cells.append(lines)
+            for line in range(max(1, *(len(lines) for lines in cells))):
+                prefix = f"{rank + 1:3d}.  " if line == 0 else "      "
+                parts = [lines[line] if line < len(lines) else "" for lines in cells]
+                print(prefix + "".join(f"{part:<{width + 2}}" for part in parts).rstrip())
 
 
-def shorten(text: str, limit: int) -> str:
-    return text if len(text) <= limit else text[: limit - 1] + "…"
+def column_width(columns: int) -> int:
+    """Width of one setup column, fitted to the width of the terminal."""
+    total = shutil.get_terminal_size(fallback=(120, 40)).columns
+    return max(30, (total - 6) // columns - 2)
 
 
 def free_memory() -> None:
