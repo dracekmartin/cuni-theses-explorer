@@ -44,4 +44,4 @@ two runs at once did not fit next to each other on the laptop.
 
 Reproduce: `python experiments/03-search-setups/run.py setups/<setup>.toml`, then
 `eval/score.py` and `eval/compare.py` as described in eval/README.md. With `--query "..."`
-the same script prints the answer to a single query instead.
+it answers single queries instead, side by side when given several setups.

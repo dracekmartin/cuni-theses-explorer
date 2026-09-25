@@ -1,18 +1,22 @@
-"""Run one search setup over every query of an evaluation version.
+"""Run search setups over the queries of an evaluation version, or answer single queries.
 
-Reads a setup description (setups/<name>.toml), embeds whatever is missing from the
+Reads each setup description (setups/<name>.toml), embeds whatever is missing from the
 cache, answers all queries in eval/<version>/queries.jsonl, and writes the run
 (data/runs/03-search-setups/<name>.run) and the results file (results/<name>.json) with
-the pipeline and cost. Metrics are added afterwards by eval/score.py.
+the pipeline and cost. Metrics are added afterwards by eval/score.py. With --query the
+setups answer the given queries instead and print their top theses, side by side when
+several setups are given.
 
 Usage:
     python experiments/03-search-setups/run.py setups/01-baseline.toml [--version v0]
-    python experiments/03-search-setups/run.py setups/bge-m3-semantic.toml --query "..."
+    python experiments/03-search-setups/run.py setups/01-baseline.toml
+        setups/bge-m3-semantic.toml --query "strategická videohra" --top 3
 """
 
 from __future__ import annotations
 
 import argparse
+import gc
 import json
 import statistics
 import time
@@ -41,6 +45,8 @@ from rank_bm25 import BM25Okapi
 from ranking import fuse_rrf, lexical_ranking, rerank, semantic_ranking, to_theses
 
 RESULTS_PER_QUERY = 100
+TITLE_CHARS = 48
+Ranking = list[tuple[str, float]]
 
 
 def build_chunks(
@@ -84,19 +90,21 @@ def describe(setup: dict[str, Any], version: str) -> dict[str, Any]:
     }
 
 
-def run(setup_path: Path, version: str, texts: list[str] | None = None, top: int = 10) -> None:
-    """Answer the query set of the version and write the run, or only print answers to
-    `texts` when given."""
-    setup = tomllib.loads(setup_path.read_text(encoding="utf-8"))
-    name = setup["name"]
+def load_setup(path: Path) -> dict[str, Any]:
+    return tomllib.loads(path.read_text(encoding="utf-8"))
+
+
+def answer(
+    setup: dict[str, Any],
+    version: str,
+    corpus: list[dict[str, Any]],
+    queries: list[dict[str, Any]],
+) -> tuple[list[Ranking], list[float], int]:
+    """Rank the theses for every query. Returns the rankings, the latency of each query in
+    milliseconds and the number of chunks in the index."""
     strategy = setup["strategy"]
     sources: list[str] = strategy["sources"]
-    corpus = load_corpus(version)
-    if texts is None:
-        queries = load_queries(version)
-    else:
-        queries = [{"id": f"q{number}", "text": text} for number, text in enumerate(texts, 1)]
-    print(f"{name}: {len(corpus)} theses, {len(queries)} queries, sources {sources}")
+    print(f"{setup['name']}: {len(corpus)} theses, {len(queries)} queries, sources {sources}")
 
     body, meta = build_chunks(version, corpus, setup["chunking"].get("metadata_chunk", False))
     chunks = [chunk for handle in body for chunk in body[handle]]
@@ -154,7 +162,7 @@ def run(setup_path: Path, version: str, texts: list[str] | None = None, top: int
             model_kwargs={"torch_dtype": torch.float16},
         )
 
-    answers: list[list[tuple[str, float]]] = []
+    answers: list[Ranking] = []
     latencies: list[float] = []
     for position, query in enumerate(queries):
         started = time.monotonic()
@@ -171,40 +179,77 @@ def run(setup_path: Path, version: str, texts: list[str] | None = None, top: int
         latencies.append((time.monotonic() - started) * 1000 + encode_ms)
         if (position + 1) % 100 == 0:
             print(f"queries: {position + 1}/{len(queries)}")
+    return answers, latencies, len(chunks)
 
-    if texts is not None:
-        print_answers(corpus, texts, answers, top)
-        return
+
+def run_setup(setup_path: Path, version: str) -> None:
+    """Answer the query set of the version and write the run and the results file."""
+    setup = load_setup(setup_path)
+    corpus = load_corpus(version)
+    queries = load_queries(version)
+    answers, latencies, chunk_count = answer(setup, version, corpus, queries)
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
-    run_path = RUNS_DIR / f"{name}.run"
+    run_path = RUNS_DIR / f"{setup['name']}.run"
     with run_path.open("w", encoding="utf-8") as run_file:
         for query, theses in zip(queries, answers, strict=True):
             for rank, (handle, score) in enumerate(theses, start=1):
-                run_file.write(f"{query['id']} Q0 {handle} {rank} {score:.6f} {name}\n")
-    write_results(setup, version, run_path, chunks, latencies)
+                run_file.write(f"{query['id']} Q0 {handle} {rank} {score:.6f} {setup['name']}\n")
+    write_results(setup, version, run_path, chunk_count, latencies)
     print(f"run written to {run_path.relative_to(EXPERIMENT_DIR.parents[1])}")
 
 
-def print_answers(
-    corpus: list[dict[str, Any]],
-    texts: list[str],
-    answers: list[list[tuple[str, float]]],
-    top: int,
-) -> None:
+def ask(setup_paths: list[Path], version: str, texts: list[str], top: int) -> None:
+    """Answer single queries with each setup and print the top theses of every setup."""
+    corpus = load_corpus(version)
+    queries = [{"id": f"q{number}", "text": text} for number, text in enumerate(texts, 1)]
+    columns: list[tuple[str, list[Ranking]]] = []
+    for path in setup_paths:
+        setup = load_setup(path)
+        answers, _, _ = answer(setup, version, corpus, queries)
+        columns.append((setup["name"], answers))
+        free_memory()
     records = {record["handle"]: record for record in corpus}
-    for text, theses in zip(texts, answers, strict=True):
+    for number, text in enumerate(texts):
         print(f"\n=== {text}")
-        for rank, (handle, _) in enumerate(theses[:top], start=1):
-            record = records[handle]
-            year = (record.get("year") or "?")[:4]
-            print(f"{rank:3d}. [{record.get('language')}, {year}] {record['title']} ({handle})")
+        if len(columns) == 1:
+            for rank, (handle, _) in enumerate(columns[0][1][number][:top], start=1):
+                record = records[handle]
+                year = (record.get("year") or "?")[:4]
+                print(f"{rank:3d}. [{record.get('language')}, {year}] {record['title']} ({handle})")
+            continue
+        width = TITLE_CHARS + 2
+        print("     " + "".join(f"{name:<{width}}" for name, _ in columns).rstrip())
+        for rank in range(top):
+            cells = []
+            for _, answers in columns:
+                theses = answers[number]
+                cell = ""
+                if rank < len(theses):
+                    record = records[theses[rank][0]]
+                    cell = shorten(f"[{record.get('language')}] {record['title']}", TITLE_CHARS)
+                cells.append(f"{cell:<{width}}")
+            print(f"{rank + 1:3d}. " + "".join(cells).rstrip())
+
+
+def shorten(text: str, limit: int) -> str:
+    return text if len(text) <= limit else text[: limit - 1] + "…"
+
+
+def free_memory() -> None:
+    """Release what one setup held before the next one loads; the laptop runs short of
+    commit memory with two indexes and models at once."""
+    gc.collect()
+    import torch
+
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
 
 
 def write_results(
     setup: dict[str, Any],
     version: str,
     run_path: Path,
-    chunks: list[Chunk],
+    chunk_count: int,
     latencies: list[float],
 ) -> None:
     """Results file with pipeline and cost; keeps metrics a previous scoring wrote."""
@@ -226,7 +271,7 @@ def write_results(
         "cost": {
             "hardware": torch.cuda.get_device_name(0) if torch.cuda.is_available() else "CPU",
             "index_seconds": index_seconds,
-            "chunks": len(chunks),
+            "chunks": chunk_count,
             "query_ms_median": round(statistics.median(latencies), 1) if latencies else None,
         },
         "eval_version": previous.get("eval_version"),
@@ -237,16 +282,20 @@ def write_results(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("setup", type=Path, help="setup file, relative to the experiment")
+    parser.add_argument("setups", nargs="+", type=Path, help="setup files, relative to here")
     parser.add_argument("--version", default="v0")
     parser.add_argument(
-        "--query", action="append", help="print the answer to this query instead, repeatable"
+        "--query", action="append", help="answer this query instead of the set, repeatable"
     )
-    parser.add_argument("--top", type=int, default=10, help="theses printed per --query")
+    parser.add_argument("--top", type=int, default=10, help="theses shown per --query")
     args = parser.parse_args()
     utf8_stdout()
-    setup_path = args.setup if args.setup.is_absolute() else EXPERIMENT_DIR / args.setup
-    run(setup_path, args.version, args.query, args.top)
+    paths = [path if path.is_absolute() else EXPERIMENT_DIR / path for path in args.setups]
+    if args.query:
+        ask(paths, args.version, args.query, args.top)
+    else:
+        for path in paths:
+            run_setup(path, args.version)
 
 
 if __name__ == "__main__":
