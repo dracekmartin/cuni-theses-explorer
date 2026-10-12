@@ -1,0 +1,2 @@
+# Runtime dependencies of the full harvest.
+requests>=2.32
