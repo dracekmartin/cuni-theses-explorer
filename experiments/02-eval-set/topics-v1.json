@@ -1,0 +1,152 @@
+[
+  {
+    "id": "topic-01",
+    "cs": "prevence užívání návykových látek u dospívajících",
+    "en": "prevention of substance use among adolescents",
+    "narrative": "Relevantní (2): prevence nebo programy proti pití alkoholu, kouření nebo braní drog u dospívajících, a také to, co jim užívání usnadňuje nebo ho brzdí. Částečně relevantní (1): užívání návykových látek u dospělých, nebo jiné rizikové chování dospívajících, které se drog netýká."
+  },
+  {
+    "id": "topic-02",
+    "cs": "ochrana zaměstnance při výpovědi z pracovního poměru",
+    "en": "employee protection against dismissal",
+    "narrative": "Relevantní (2): jak zákon upravuje skončení pracovního poměru: důvody výpovědi, ochrana zaměstnance před výpovědí, odstupné. Částečně relevantní (1): jiná témata pracovního práva, třeba pracovní doba nebo diskriminace v práci."
+  },
+  {
+    "id": "topic-03",
+    "cs": "neuronový strojový překlad",
+    "en": "neural machine translation",
+    "narrative": "Relevantní (2): práce, které staví nebo hodnotí systémy strojového překladu založené na neuronových sítích. Částečně relevantní (1): jiné úlohy zpracování přirozeného jazyka řešené neuronovými sítěmi, nebo strojový překlad bez neuronových sítí."
+  },
+  {
+    "id": "topic-04",
+    "cs": "ruská zahraniční politika vůči postsovětským státům",
+    "en": "Russian foreign policy towards post-Soviet states",
+    "narrative": "Relevantní (2): politika Ruska vůči Ukrajině, Gruzii, Bělorusku, pobaltským státům nebo státům Střední Asie. Částečně relevantní (1): vnitřní politika Ruska, nebo politika EU či NATO v této oblasti."
+  },
+  {
+    "id": "topic-05",
+    "cs": "stárnutí populace v Česku",
+    "en": "population ageing in Czechia",
+    "narrative": "Relevantní (2): stárnutí obyvatel Česka, jeho příčiny, důsledky a výhledy do budoucna. Částečně relevantní (1): jiná demografická témata v Česku, třeba porodnost nebo migrace, nebo stárnutí obyvatel v jiných zemích."
+  },
+  {
+    "id": "topic-06",
+    "cs": "automatické testování a verifikace programů",
+    "en": "automated testing and verification of programs",
+    "narrative": "Relevantní (2): metody nebo nástroje, které programy testují nebo ověřují jejich správnost, ať automatickými testy, rozborem zdrojového kódu, nebo formálním důkazem. Částečně relevantní (1): kvalita softwaru nebo postup vývoje bez vlastních metod testování či ověřování."
+  },
+  {
+    "id": "topic-07",
+    "cs": "inkluzivní vzdělávání žáků se speciálními vzdělávacími potřebami",
+    "en": "inclusive education of pupils with special educational needs",
+    "narrative": "Relevantní (2): společné vzdělávání žáků se speciálními vzdělávacími potřebami v běžných školách, podpůrná opatření, asistenti pedagoga, postoje učitelů ke společnému vzdělávání. Částečně relevantní (1): vzdělávání těchto žáků ve speciálních školách, nebo jejich potřeby mimo školu."
+  },
+  {
+    "id": "topic-08",
+    "cs": "fyzioterapie bolesti dolní části zad",
+    "en": "physiotherapy for low back pain",
+    "narrative": "Relevantní (2): fyzioterapie, cvičení nebo jiná rehabilitace bolesti v dolní části zad (bederní páteře). Částečně relevantní (1): fyzioterapie bolesti jiných částí těla, třeba krku nebo kloubů, nebo bolest zad léčená jinak než fyzioterapií."
+  },
+  {
+    "id": "topic-09",
+    "cs": "rostlinné alkaloidy jako inhibitory cholinesteráz",
+    "en": "plant alkaloids as cholinesterase inhibitors",
+    "narrative": "Relevantní (2): práce, které z rostlin získávají alkaloidy (jednu skupinu přírodních látek) a zkoumají, jestli brzdí enzymy zvané cholinesterázy. Takové látky se hledají jako léky na Alzheimerovu chorobu. Částečně relevantní (1): jiné účinky rostlinných alkaloidů, nebo látky brzdící cholinesterázy, které nepocházejí z rostlin."
+  },
+  {
+    "id": "topic-10",
+    "cs": "industrializace českých zemí",
+    "en": "industrialisation of the Czech lands",
+    "narrative": "Relevantní (2): hospodářské a sociální dějiny průmyslové revoluce v českých zemích: továrny, podnikatelé, dělníci, železnice a průmysl od 18. do začátku 20. století. Částečně relevantní (1): hospodářské dějiny jiných zemí nebo pozdějších období, nebo sociální dějiny českých zemí bez vztahu k průmyslu."
+  },
+  {
+    "id": "topic-11",
+    "cs": "dezinformace v online médiích",
+    "en": "disinformation in online media",
+    "narrative": "Relevantní (2): dezinformace, falešné zprávy, propaganda nebo konspirační teorie šířené na internetu, a jejich ověřování. Částečně relevantní (1): manipulace v tisku, rozhlase nebo televizi, nebo online média a sociální sítě bez vztahu k dezinformacím."
+  },
+  {
+    "id": "topic-12",
+    "cs": "trestní odpovědnost právnických osob",
+    "en": "criminal liability of legal entities",
+    "narrative": "Relevantní (2): trestní odpovědnost firem a jiných právnických osob: kdy firma odpovídá za trestný čin, jaké tresty jí hrozí a jak to funguje v praxi. Částečně relevantní (1): jiná témata hospodářské trestné činnosti, nebo odpovědnost firem podle občanského či správního práva."
+  },
+  {
+    "id": "topic-13",
+    "cs": "vliv klimatické změny na rozšíření živočichů",
+    "en": "effect of climate change on the distribution of animals",
+    "narrative": "Relevantní (2): jak změna klimatu mění, kde živočichové žijí, kdy se rozmnožují nebo táhnou, nebo kolik jich je. Částečně relevantní (1): vliv změny klimatu na rostliny nebo na přírodu obecně, nebo rozšíření živočichů bez vztahu ke klimatu."
+  },
+  {
+    "id": "topic-14",
+    "cs": "znečištění podzemních vod",
+    "en": "groundwater contamination",
+    "narrative": "Relevantní (2): znečištění podzemní vody chemickými látkami: jak se šíří, jak se sleduje a jak se odstraňuje. Částečně relevantní (1): znečištění řek, jezer nebo půdy, nebo podzemní voda bez vztahu ke znečištění."
+  },
+  {
+    "id": "topic-15",
+    "cs": "výklad novozákonních podobenství",
+    "en": "interpretation of New Testament parables",
+    "narrative": "Relevantní (2): výklad Ježíšových podobenství z Nového zákona, tedy krátkých příběhů s poučením, třeba o milosrdném Samaritánovi. Částečně relevantní (1): výklad jiných textů Nového zákona, nebo podobenství mimo Nový zákon."
+  },
+  {
+    "id": "topic-16",
+    "cs": "duchovní péče o pacienty v nemocnicích",
+    "en": "spiritual care for hospital patients",
+    "narrative": "Relevantní (2): nemocniční kaplani a duchovní péče o nemocné a umírající, duchovní potřeby nevyléčitelně nemocných. Částečně relevantní (1): duchovní péče jinde, třeba ve vězení nebo v armádě, nebo psychická podpora pacientů bez duchovního rozměru."
+  },
+  {
+    "id": "topic-17",
+    "cs": "prevence dekubitů v ošetřovatelské péči",
+    "en": "prevention of pressure ulcers in nursing care",
+    "narrative": "Relevantní (2): prevence proleženin (dekubitů), hodnocení rizika, že vzniknou, a ošetřovatelská péče o ně. Částečně relevantní (1): jiná péče o ležící pacienty, nebo péče o jiné dlouho se hojící rány."
+  },
+  {
+    "id": "topic-18",
+    "cs": "akutní leukémie u dětí",
+    "en": "acute leukaemia in children",
+    "narrative": "Relevantní (2): akutní leukémie (rakovina krve) u dětí: jak se zjišťuje, jak se léčí, jak léčba dopadá a jaké má pozdější následky. Částečně relevantní (1): jiná nádorová onemocnění dětí, nebo leukémie u dospělých."
+  },
+  {
+    "id": "topic-19",
+    "cs": "orální historie každodenního života za komunismu",
+    "en": "oral history of everyday life under communism",
+    "narrative": "Relevantní (2): rozhovory s pamětníky nebo jejich vzpomínky na život v komunistickém Československu. Částečně relevantní (1): rozhovory s pamětníky o jiných obdobích, nebo dějiny komunistického režimu bez rozhovorů s pamětníky."
+  },
+  {
+    "id": "topic-20",
+    "cs": "environmentální výchova ve škole",
+    "en": "environmental education at school",
+    "narrative": "Relevantní (2): výchova k ochraně přírody a životního prostředí a k udržitelnosti ve školkách, na základních a na středních školách. Částečně relevantní (1): vztah dospělých k životnímu prostředí, nebo výuka venku bez zaměření na přírodu a životní prostředí."
+  },
+  {
+    "id": "topic-21",
+    "cs": "modelování znečištění ovzduší",
+    "en": "modelling of air pollution",
+    "narrative": "Relevantní (2): počítačové modely, které počítají, jak se znečištění šíří ovzduším nebo jak se v něm chemicky mění, a ověřování těchto modelů. Částečně relevantní (1): měření kvality ovzduší bez modelů, nebo modely počasí a klimatu, které znečištění nepočítají."
+  },
+  {
+    "id": "topic-22",
+    "cs": "školní pokusy ve výuce fyziky",
+    "en": "school experiments in physics teaching",
+    "narrative": "Relevantní (2): pokusy a ukázky pro hodiny fyziky na základních a středních školách: jak je připravit a jak je ve výuce použít. Částečně relevantní (1): pokusy ve výuce jiných přírodních věd, nebo výuka fyziky bez pokusů."
+  },
+  {
+    "id": "topic-23",
+    "cs": "měnová politika centrální banky",
+    "en": "monetary policy of the central bank",
+    "narrative": "Relevantní (2): měnová politika centrální banky, třeba České národní banky nebo Evropské centrální banky: úrokové sazby, cílování inflace, intervence na devizovém trhu. Částečně relevantní (1): státní rozpočet a daně, bankovnictví nebo finanční trhy bez vztahu k měnové politice."
+  },
+  {
+    "id": "topic-24",
+    "cs": "zubní kaz u dětí",
+    "en": "dental caries in children",
+    "narrative": "Relevantní (2): zubní kaz u dětí: jak je častý, jak mu předcházet a jak ho léčit. Částečně relevantní (1): jiné nemoci zubů a úst u dětí, nebo zubní kaz u dospělých."
+  },
+  {
+    "id": "topic-25",
+    "cs": "léčba diabetu 2. typu",
+    "en": "treatment of type 2 diabetes",
+    "narrative": "Relevantní (2): léčba cukrovky 2. typu léky, dietou, pohybem nebo jinak, její komplikace a to, jak pacienti léčbu dodržují. Částečně relevantní (1): cukrovka 1. typu nebo těhotenská cukrovka, nebo obezita bez vztahu k léčbě cukrovky."
+  }
+]

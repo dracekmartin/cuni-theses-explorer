@@ -1,16 +1,21 @@
-"""Generate the known-item queries of layer 1 for the pilot evaluation set (eval/v0).
+"""Generate the known-item queries of layer 1 for an evaluation version (eval/v0, eval/v1).
 
 Picks target theses from the corpus, builds `title` queries from their metadata and asks
 an LLM (gpt-oss-120b on e-INFRA CZ) for `about-short`, `about-sentence` and `detail`
-queries in Czech and English. Every raw answer is kept in data/eval-v0/llm/, so the set
-can be rebuilt without calling the model again and a rerun only asks for what is
+queries in Czech and English. Every raw answer is kept in data/eval-<version>/llm/, so
+the set can be rebuilt without calling the model again and a rerun only asks for what is
 missing. A query group is dropped when the model copied the title into it.
 
-Outputs: eval/v0/queries.jsonl, eval/v0/qrels.txt (the target of each query, grade 2),
-data/eval-v0/targets.json.
+v1 keeps the 80 targets of v0 with their numbers and answers (copied from
+data/eval-v0/llm/ on the first run) and adds 120 targets drawn only from the theses v0
+did not have.
+
+Outputs: eval/<version>/queries.jsonl, eval/<version>/qrels.txt (the target of each query,
+grade 2), data/eval-<version>/targets.json.
 
 Usage:
     python experiments/02-eval-set/generate_queries.py [--limit 5] [--dry-run]
+    EVAL_VERSION=v1 python experiments/02-eval-set/generate_queries.py
 """
 
 from __future__ import annotations
@@ -20,6 +25,7 @@ import json
 import os
 import random
 import re
+import shutil
 import time
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
@@ -34,6 +40,7 @@ from common import (
     EVAL_DIR,
     REPO_ROOT,
     TEXTS_DIR,
+    VERSION,
     Thesis,
     read_theses,
     utf8_stdout,
@@ -47,6 +54,11 @@ LLM_DIR = DATA_DIR / "llm"
 TARGETS = 80
 LANGUAGE_QUOTAS = {"cs": 40, "en": 30, "sk": 10}
 FACULTY_CAP = 20
+V0_DIR = REPO_ROOT / "data" / "eval-v0"
+V1_NEW_TARGETS = 120
+V1_NEW_QUOTAS = {"cs": 60, "en": 45, "sk": 15}
+# With all 17 faculties in v1, a cap of 20 would not spread the targets at all.
+V1_FACULTY_CAP = 12
 MIN_TEXT_CHARS = 20_000
 # Largest share of a query's words that may come from the title. Only a near copy is
 # dropped: a stricter limit removes natural queries that name the topic in the title's
@@ -79,9 +91,11 @@ def text_of(thesis: Thesis) -> str:
     return path.read_text(encoding="utf-8", errors="replace") if path.exists() else ""
 
 
-def select_targets(corpus: list[Thesis]) -> list[Thesis]:
+def select_targets(
+    corpus: list[Thesis], total: int, quotas: dict[str, int], faculty_cap: int
+) -> list[Thesis]:
     """Targets with metadata in both languages and a real body text, English and Slovak
-    theses over-represented, at most FACULTY_CAP per faculty."""
+    theses over-represented, at most `faculty_cap` per faculty."""
     candidates = [
         thesis
         for thesis in corpus
@@ -96,19 +110,32 @@ def select_targets(corpus: list[Thesis]) -> list[Thesis]:
     chosen: list[Thesis] = []
     for thesis in candidates:
         language = thesis.language or "?"
-        quota = LANGUAGE_QUOTAS.get(language, 0)
-        if per_language[language] >= quota or per_faculty[thesis.faculty] >= FACULTY_CAP:
+        quota = quotas.get(language, 0)
+        if per_language[language] >= quota or per_faculty[thesis.faculty] >= faculty_cap:
             continue
         per_language[language] += 1
         per_faculty[thesis.faculty] += 1
         chosen.append(thesis)
     # Languages that fell short of their quota leave room for more Czech theses.
     for thesis in candidates:
-        if len(chosen) >= TARGETS:
+        if len(chosen) >= total:
             break
         if thesis not in chosen and thesis.language == "cs":
             chosen.append(thesis)
-    return chosen[:TARGETS]
+    return chosen[:total]
+
+
+def choose_targets(corpus: list[Thesis]) -> list[Thesis]:
+    """Targets of the current version. v1 keeps those of v0 first, in their order."""
+    if VERSION == "v0":
+        return select_targets(corpus, TARGETS, LANGUAGE_QUOTAS, FACULTY_CAP)
+    by_handle = {thesis.handle: thesis for thesis in corpus}
+    kept = [
+        by_handle[handle]
+        for handle in json.loads((V0_DIR / "targets.json").read_text(encoding="utf-8"))
+    ]
+    new = [thesis for thesis in corpus if thesis.source != "v0"]
+    return kept + select_targets(new, V1_NEW_TARGETS, V1_NEW_QUOTAS, V1_FACULTY_CAP)
 
 
 def pick_passage(text: str, rng: random.Random) -> str | None:
@@ -316,7 +343,7 @@ def main() -> None:
     corpus = read_theses(CORPUS_META_PATH)
     if not corpus:
         raise SystemExit("corpus is empty, run build_pilot_corpus.py first")
-    targets = select_targets(corpus)[: args.limit]
+    targets = choose_targets(corpus)[: args.limit]
     print(f"{len(targets)} targets: {dict(Counter(thesis.language for thesis in targets))}")
 
     if args.dry_run:
@@ -329,6 +356,8 @@ def main() -> None:
     from openai import OpenAI
 
     client = OpenAI(base_url=API_BASE, api_key=load_api_key(), timeout=180)
+    if VERSION != "v0" and not LLM_DIR.exists():
+        shutil.copytree(V0_DIR / "llm", LLM_DIR)
     LLM_DIR.mkdir(parents=True, exist_ok=True)
     with ThreadPoolExecutor(max_workers=WORKERS) as pool:
         generated = list(
