@@ -1,0 +1,16 @@
+name = "bge-m3-sparse"
+description = "The lexical weights of BGE-M3 alone, a learned sparse index in place of BM25 with simplemma."
+
+[chunking]
+max_chars = 1000
+split = "sentence"
+metadata_chunk = false
+
+[sparse]
+model = "BAAI/bge-m3"
+method = "lexical weights (sparse_linear.pt)"
+
+[strategy]
+sources = ["sparse"]
+fusion = "none"
+chunk_pool = 200

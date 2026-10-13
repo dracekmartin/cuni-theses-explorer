@@ -1,0 +1,18 @@
+name = "bge-m3-semantic"
+description = "Semantic branch of bge-m3-hybrid alone."
+
+[chunking]
+max_chars = 1000
+split = "sentence"
+metadata_chunk = false
+
+[embedding]
+model = "BAAI/bge-m3"
+query_prefix = ""
+passage_prefix = ""
+dtype = "float16"
+max_seq_length = 512
+
+[strategy]
+sources = ["semantic"]
+chunk_pool = 200

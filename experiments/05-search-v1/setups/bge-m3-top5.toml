@@ -1,0 +1,22 @@
+name = "bge-m3-top5"
+description = "bge-m3 alone, a thesis ranked by the sum of the scores of its five best chunks instead of its best chunk only."
+
+[chunking]
+max_chars = 1000
+split = "sentence"
+metadata_chunk = false
+
+[embedding]
+model = "BAAI/bge-m3"
+query_prefix = ""
+passage_prefix = ""
+dtype = "float16"
+max_seq_length = 512
+
+[strategy]
+sources = ["semantic"]
+chunk_pool = 200
+
+[aggregation]
+method = "sum of top chunks"
+chunks = 5

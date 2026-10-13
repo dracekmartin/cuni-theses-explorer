@@ -1,0 +1,6 @@
+# Runtime dependencies of the search setups over eval/v1 (indexing, retrieval, reranking).
+sentence-transformers>=4.1
+rank_bm25>=0.2
+simplemma>=1.0
+numpy>=2.0
+scipy>=1.13

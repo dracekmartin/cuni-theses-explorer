@@ -1,0 +1,24 @@
+name = "bge-m3-dense-sparse"
+description = "bge-m3 dense vectors plus 0.3 times its lexical weights, the sum the BGE-M3 paper uses."
+
+[chunking]
+max_chars = 1000
+split = "sentence"
+metadata_chunk = false
+
+[embedding]
+model = "BAAI/bge-m3"
+query_prefix = ""
+passage_prefix = ""
+dtype = "float16"
+max_seq_length = 512
+
+[sparse]
+model = "BAAI/bge-m3"
+method = "lexical weights (sparse_linear.pt)"
+
+[strategy]
+sources = ["semantic", "sparse"]
+fusion = "sum"
+chunk_pool = 200
+weights = { semantic = 1.0, sparse = 0.3 }

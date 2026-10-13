@@ -1,0 +1,26 @@
+name = "bge-m3-qwen3"
+description = "bge-m3 finds 200 chunks, Qwen3-Embedding-0.6B rescores the top 100 of them."
+
+[chunking]
+max_chars = 1000
+split = "sentence"
+metadata_chunk = false
+
+[embedding]
+model = "BAAI/bge-m3"
+query_prefix = ""
+passage_prefix = ""
+dtype = "float16"
+max_seq_length = 512
+
+[strategy]
+sources = ["semantic"]
+fusion = "none"
+chunk_pool = 200
+
+[rescoring]
+model = "Qwen/Qwen3-Embedding-0.6B"
+query_prefix = "Instruct: Given a search query, retrieve passages of university theses that answer it\nQuery:"
+dtype = "float16"
+max_seq_length = 512
+candidates = 100
