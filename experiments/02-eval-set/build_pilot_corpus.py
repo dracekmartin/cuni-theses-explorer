@@ -34,6 +34,7 @@ from common import (
     TEXTS_DIR,
     Thesis,
     read_theses,
+    require_version,
     utf8_stdout,
     write_theses,
 )
@@ -190,6 +191,7 @@ def main() -> None:
     parser.add_argument("--per-department", type=int, default=20)
     args = parser.parse_args()
     utf8_stdout()
+    require_version("v0")
 
     catalog = walk_faculties(DEFAULT_FACULTIES, args.items_per_faculty)
     print(f"catalog: {len(catalog)} items, {sum(map(eligible, catalog))} eligible")

@@ -4,18 +4,27 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import sys
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-VERSION = "v0"
+# Set for one command only (EVAL_VERSION=v1 python ...), so a later v0 command stays on v0.
+VERSION = os.environ.get("EVAL_VERSION", "v0")
 EVAL_DIR = REPO_ROOT / "eval" / VERSION
 DATA_DIR = REPO_ROOT / "data" / f"eval-{VERSION}"
 CATALOG_DIR = DATA_DIR / "catalog"
 CORPUS_META_PATH = DATA_DIR / "corpus.jsonl"
 TEXTS_DIR = DATA_DIR / "texts"
 EXPERIMENT_01_DIR = REPO_ROOT / "data" / "01-mini-pipeline"
+HARVEST_DIR = REPO_ROOT / "data" / "04-full-harvest"
+
+
+def require_version(version: str) -> None:
+    """Stop a builder that belongs to another version than the one EVAL_VERSION selects."""
+    if version != VERSION:
+        raise SystemExit(f"this script builds {version}, but EVAL_VERSION selects {VERSION}")
 
 
 @dataclass
