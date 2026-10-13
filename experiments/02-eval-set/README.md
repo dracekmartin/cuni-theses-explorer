@@ -1,11 +1,12 @@
 # Experiment 02: evaluation set
 
 Which fixed corpus, queries and relevance judgments let us compare search setups with each
-other and with the current DSpace search? The experiment builds the pilot version `v0` of
-the set in [eval/](../../eval/README.md).
+other and with the current DSpace search? The experiment builds the versions of the set in
+[eval/](../../eval/README.md): the pilot `v0` and `v1`.
 
-Done except the human check of layer 2, 2026-09-24. Corpus: 592 theses. Builds on:
-experiment 01. LLM: `gpt-oss-120b` on e-INFRA CZ.
+v0 done 2026-09-24, v1 done 2026-10-13, the human check of layer 2 postponed. Corpus: 592
+theses (v0), 5,029 (v1). Builds on: experiments 01 and 04. LLM: `gpt-oss-120b` on
+e-INFRA CZ.
 
 | Query type | Queries | Written from | Tests |
 | --- | --- | --- | --- |
@@ -39,5 +40,50 @@ institute of formal and applied linguistics. A blind sample of 30 pairs for a hu
 is prepared in `data/eval-v0/validation.md`; until it is graded, topic scores rest on the
 LLM alone.
 
-Reproduce: `build_pilot_corpus.py`, `generate_queries.py` and `topics.py add`, then the
-setups of experiment 03, then `topics.py judge` (needs `EINFRA_API_KEY` in `.env`).
+Version v1 keeps all theses of v0, so their queries stay valid, and adds 4,437 theses of
+120 departments drawn from all 17 faculties of the full harvest (experiment 04): a
+department with probability proportional to its size, at most 40 theses from one, only
+theses marked as defended or without a recorded outcome, with an open body text of at
+least 20 KB. The 80 targets of v0 keep their 586 queries, and 120 targets from the new
+part add 892, so v1 has 1,478 known-item queries. Of the 25 topics, 6 come from v0 and 19
+were written for the drawn departments, so that every faculty has one. Their description
+of relevance was first in English and used terms a non-expert grader could not judge by,
+so it is written in plain Czech, and the LLM judged against the same Czech text.
+
+The top 10 of the 14 setups of experiment 05 and of the two DSpace runs pooled 1,172 pairs
+of topic and thesis (1,033 distinct theses) for the 25 topics. The LLM graded 703 as not
+relevant, 314 as partially relevant and 155 as relevant, and none as relevant for neural
+machine translation or for pressure ulcers. 883 theses of the corpus (18 %) have no
+abstract in DSpace, so a grader sees only their title and, for 414 of them, keywords. A
+blind sample of 150 pairs of all 1,172, 50 for each LLM grade, waits on a local page for a
+person to grade (`topics.py sample` writes it, the key N marks a pair that cannot be
+decided).
+
+The human check is postponed until these weaknesses of v1 are settled:
+
+- Relevance is judged from the title, keywords and abstract alone. A thesis that treats the
+  topic in one chapter gets too low a grade, which favours setups that match abstracts over
+  setups that find passages in the full text. Two remedies: show the two or three passages
+  of the thesis that match the topic best, and take a missing abstract from the body text,
+  where it usually stands on one of the first pages.
+- 883 theses (18 %) have no abstract in DSpace and are judged by their title and, for 414
+  of them, keywords. Some abstracts are damaged: HTML entities in those of 131 theses, a
+  lost letter (ř as Z) in 2, page numbers and headers copied from the PDF.
+- Claude wrote the topics from the list of departments, not users, and two topics have no
+  relevant thesis.
+- The pool holds only what some setup put into its top 10, so recall is unknown, and a new
+  setup brings unjudged theses that must be judged before its topic score counts.
+- The sample takes 50 pairs per LLM grade, while 60 % of the pool has grade 0, so its
+  agreement has to be reweighted to stand for the pool.
+- One grader without expertise in most of the fields checks the judge, and the model of the
+  judge is not pinned on e-INFRA.
+- Experiment 05 chose the number of summed chunks on the same topics, which need a set of
+  their own for such choices.
+
+Reproduce v0: `build_pilot_corpus.py`, `generate_queries.py` and `topics.py add`, then the
+setups of experiment 03, then `topics.py judge` (needs `EINFRA_API_KEY` in `.env`). The
+blind sample of v0, `data/eval-v0/validation.md`, came from the judge step of that time
+and stays as it is. For v1
+the same scripts run with `EVAL_VERSION=v1`, `build_v1_corpus.py` in place of the first,
+and the setups of experiment 05, then `topics.py sample` and, with the saved grades,
+`topics.py agreement --grades validation-grades.json`.

@@ -39,7 +39,9 @@ and ideation documents live in the sibling repo `dracekmartin/diplomkaManagement
 - **Evaluation:** experiments do not compute retrieval metrics themselves. Each search
   setup writes a TREC run and `eval/score.py` scores it against a version in `eval/`;
   every result names that version. A version is frozen once a result has been reported
-  against it, and changes make a new version.
+  against it, and changes make a new version. The table of search setups in
+  `experiments/README.md` holds every setup with its newest result and status, and an
+  experiment that adds or reruns a setup updates it.
 
 ## Quality gates
 

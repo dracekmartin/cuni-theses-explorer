@@ -1,0 +1,170 @@
+{
+  "experiment": "05-search-v1",
+  "setup": "dspace-escaped",
+  "description": "The search of DSpace (OpenSearch over Discovery), restricted to the theses of the corpus, Solr syntax escaped.",
+  "run": "data/runs/05-search-v1/dspace-escaped.run",
+  "pipeline": {
+    "harvest": {
+      "source": "live DSpace search",
+      "date": "2026-10-13"
+    },
+    "strategy": {
+      "sources": [
+        "DSpace OpenSearch"
+      ],
+      "page_size": 100,
+      "max_depth": 1000,
+      "escaped": true
+    }
+  },
+  "cost": {
+    "pages": 4500,
+    "failed_or_partial_queries": [],
+    "zero_result_queries": 117
+  },
+  "eval_version": "v1",
+  "metrics": {
+    "known_item": {
+      "all": {
+        "queries": 1478,
+        "mrr@10": 0.5625,
+        "success@1": 0.5345,
+        "success@10": 0.6015,
+        "success@100": 0.6042
+      },
+      "cross_lingual": {
+        "queries": 798,
+        "mrr@10": 0.383,
+        "success@1": 0.3521,
+        "success@10": 0.4273,
+        "success@100": 0.4298
+      },
+      "same_language": {
+        "queries": 680,
+        "mrr@10": 0.773,
+        "success@1": 0.7485,
+        "success@10": 0.8059,
+        "success@100": 0.8088
+      },
+      "by_type": {
+        "title": {
+          "queries": 394,
+          "mrr@10": 0.9469,
+          "success@1": 0.9137,
+          "success@10": 0.9975,
+          "success@100": 1.0
+        },
+        "about-short": {
+          "queries": 288,
+          "mrr@10": 0.6787,
+          "success@1": 0.6389,
+          "success@10": 0.7396,
+          "success@100": 0.7465
+        },
+        "about-sentence": {
+          "queries": 396,
+          "mrr@10": 0.3523,
+          "success@1": 0.3409,
+          "success@10": 0.3636,
+          "success@100": 0.3636
+        },
+        "detail": {
+          "queries": 400,
+          "mrr@10": 0.3082,
+          "success@1": 0.2775,
+          "success@10": 0.3475,
+          "success@100": 0.35
+        }
+      },
+      "by_lang": {
+        "cs->cs": {
+          "queries": 376,
+          "mrr@10": 0.6518,
+          "success@1": 0.633,
+          "success@10": 0.6835,
+          "success@100": 0.6888
+        },
+        "cs->en": {
+          "queries": 276,
+          "mrr@10": 0.351,
+          "success@1": 0.337,
+          "success@10": 0.3768,
+          "success@100": 0.3768
+        },
+        "cs->sk": {
+          "queries": 62,
+          "mrr@10": 0.2016,
+          "success@1": 0.1935,
+          "success@10": 0.2097,
+          "success@100": 0.2097
+        },
+        "en->cs": {
+          "queries": 375,
+          "mrr@10": 0.4247,
+          "success@1": 0.3813,
+          "success@10": 0.4827,
+          "success@100": 0.488
+        },
+        "en->en": {
+          "queries": 281,
+          "mrr@10": 0.9193,
+          "success@1": 0.8861,
+          "success@10": 0.9537,
+          "success@100": 0.9537
+        },
+        "en->sk": {
+          "queries": 85,
+          "mrr@10": 0.4357,
+          "success@1": 0.3882,
+          "success@10": 0.5059,
+          "success@100": 0.5059
+        },
+        "sk->sk": {
+          "queries": 23,
+          "mrr@10": 0.9674,
+          "success@1": 0.9565,
+          "success@10": 1.0,
+          "success@100": 1.0
+        }
+      }
+    },
+    "topic": {
+      "all": {
+        "queries": 50,
+        "ndcg@10": 0.4942,
+        "p@10": 0.486,
+        "recall@100": 0.4136,
+        "judged@10": 1.0
+      }
+    },
+    "consistency": {
+      "all": {
+        "rbo": 0.4262,
+        "groups": 499
+      },
+      "by_type": {
+        "about-sentence": {
+          "rbo": 0.1177,
+          "groups": 82
+        },
+        "about-short": {
+          "rbo": 0.4484,
+          "groups": 112
+        },
+        "detail": {
+          "rbo": 0.0903,
+          "groups": 86
+        },
+        "title": {
+          "rbo": 0.7245,
+          "groups": 194
+        },
+        "topic": {
+          "rbo": 0.1792,
+          "groups": 25
+        }
+      }
+    }
+  },
+  "scored_at": "2026-10-13"
+}

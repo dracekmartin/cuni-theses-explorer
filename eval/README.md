@@ -18,8 +18,8 @@ stay in `data/`, which is not versioned.
 
 | Version | State | Contents |
 | --- | --- | --- |
-| v0 | pilot, in preparation | 592 theses: 25 departments of 6 faculties (drawn from the first 1,000 items of each faculty in API order), the theses of experiment 01 and one showcase thesis; 586 known-item queries (layer 1) written by gpt-oss-120b for 80 of them; 6 topics (layer 2) with 276 pooled theses graded by gpt-oss-120b, human check pending |
-| v1 | planned | about 1,000 theses sampled by department from the full catalog; known-item queries (layer 1); judged topics (layer 2) |
+| v0 | pilot, frozen (reported 2026-09-25) | 592 theses: 25 departments of 6 faculties (drawn from the first 1,000 items of each faculty in API order), the theses of experiment 01 and one showcase thesis; 586 known-item queries (layer 1) written by gpt-oss-120b for 80 of them; 6 topics (layer 2) with 276 pooled theses graded by gpt-oss-120b, human check pending |
+| v1 | in preparation | 5,029 theses: all of v0 and 4,437 of 120 departments drawn from all 17 faculties of the full harvest (experiment 04); 1,478 known-item queries (layer 1) for 200 targets, those of v0 included; 25 topics (layer 2) with relevance described in plain Czech, 1,172 pooled pairs of topic and thesis graded by gpt-oss-120b on 2026-10-13, human check postponed until the weaknesses listed in experiment 02 are settled |
 
 ## Files of a version
 
@@ -132,8 +132,8 @@ A stage the setup does not use is `null`.
 Planned interface of the scripts, which are in preparation:
 
 ```sh
-python eval/score.py --version v1 --results experiments/03-search-setups/results/bge-m3-hybrid.json
-python eval/compare.py --version v1 --baseline 01-baseline experiments/03-search-setups/results/*.json
+python eval/score.py --version v1 --results experiments/05-search-v1/results/bge-m3-semantic.json
+python eval/compare.py --version v1 --baseline dspace experiments/05-search-v1/results/*.json
 ```
 
 `score.py` reads the run named in the results file and writes the metrics into it.

@@ -1,0 +1,189 @@
+{
+  "experiment": "05-search-v1",
+  "setup": "bge-m3-sparse",
+  "description": "The lexical weights of BGE-M3 alone, a learned sparse index in place of BM25 with simplemma.",
+  "run": "data/runs/05-search-v1/bge-m3-sparse.run",
+  "pipeline": {
+    "harvest": {
+      "source": "OAI-PMH, experiment 04",
+      "corpus": "eval/v1"
+    },
+    "text_extraction": {
+      "method": "DSpace TEXT bundle"
+    },
+    "chunking": {
+      "max_chars": 1000,
+      "split": "sentence",
+      "metadata_chunk": false
+    },
+    "embedding": null,
+    "sparse": {
+      "model": "BAAI/bge-m3",
+      "method": "lexical weights (sparse_linear.pt)"
+    },
+    "lexical": null,
+    "strategy": {
+      "sources": [
+        "sparse"
+      ],
+      "fusion": "none",
+      "chunk_pool": 200
+    },
+    "rescoring": null,
+    "reranking": null,
+    "aggregation": {
+      "method": "best chunk"
+    }
+  },
+  "cost": {
+    "hardware": "NVIDIA GeForce RTX 4050 Laptop GPU",
+    "index_seconds": 13683.0,
+    "chunks": 964719,
+    "query_ms_median": 41.1
+  },
+  "eval_version": "v1",
+  "metrics": {
+    "known_item": {
+      "all": {
+        "queries": 1478,
+        "mrr@10": 0.7858,
+        "success@1": 0.7355,
+        "success@10": 0.8796,
+        "success@100": 0.9459
+      },
+      "cross_lingual": {
+        "queries": 798,
+        "mrr@10": 0.6866,
+        "success@1": 0.6291,
+        "success@10": 0.807,
+        "success@100": 0.9035
+      },
+      "same_language": {
+        "queries": 680,
+        "mrr@10": 0.9021,
+        "success@1": 0.8603,
+        "success@10": 0.9647,
+        "success@100": 0.9956
+      },
+      "by_type": {
+        "title": {
+          "queries": 394,
+          "mrr@10": 0.886,
+          "success@1": 0.8629,
+          "success@10": 0.934,
+          "success@100": 0.9645
+        },
+        "about-short": {
+          "queries": 288,
+          "mrr@10": 0.7885,
+          "success@1": 0.7257,
+          "success@10": 0.8993,
+          "success@100": 0.9618
+        },
+        "about-sentence": {
+          "queries": 396,
+          "mrr@10": 0.8543,
+          "success@1": 0.8106,
+          "success@10": 0.9242,
+          "success@100": 0.9747
+        },
+        "detail": {
+          "queries": 400,
+          "mrr@10": 0.6171,
+          "success@1": 0.5425,
+          "success@10": 0.7675,
+          "success@100": 0.8875
+        }
+      },
+      "by_lang": {
+        "cs->cs": {
+          "queries": 376,
+          "mrr@10": 0.8551,
+          "success@1": 0.8005,
+          "success@10": 0.9415,
+          "success@100": 0.992
+        },
+        "cs->en": {
+          "queries": 276,
+          "mrr@10": 0.6498,
+          "success@1": 0.5906,
+          "success@10": 0.7754,
+          "success@100": 0.8478
+        },
+        "cs->sk": {
+          "queries": 62,
+          "mrr@10": 0.4741,
+          "success@1": 0.371,
+          "success@10": 0.6774,
+          "success@100": 0.9194
+        },
+        "en->cs": {
+          "queries": 375,
+          "mrr@10": 0.736,
+          "success@1": 0.688,
+          "success@10": 0.832,
+          "success@100": 0.9333
+        },
+        "en->en": {
+          "queries": 281,
+          "mrr@10": 0.9665,
+          "success@1": 0.9431,
+          "success@10": 0.9929,
+          "success@100": 1.0
+        },
+        "en->sk": {
+          "queries": 85,
+          "mrr@10": 0.7432,
+          "success@1": 0.6824,
+          "success@10": 0.8941,
+          "success@100": 0.9412
+        },
+        "sk->sk": {
+          "queries": 23,
+          "mrr@10": 0.8845,
+          "success@1": 0.8261,
+          "success@10": 1.0,
+          "success@100": 1.0
+        }
+      }
+    },
+    "topic": {
+      "all": {
+        "queries": 50,
+        "ndcg@10": 0.5237,
+        "p@10": 0.512,
+        "recall@100": 0.6429,
+        "judged@10": 1.0
+      }
+    },
+    "consistency": {
+      "all": {
+        "rbo": 0.3209,
+        "groups": 761
+      },
+      "by_type": {
+        "about-sentence": {
+          "rbo": 0.3489,
+          "groups": 198
+        },
+        "about-short": {
+          "rbo": 0.3407,
+          "groups": 144
+        },
+        "detail": {
+          "rbo": 0.2636,
+          "groups": 200
+        },
+        "title": {
+          "rbo": 0.3515,
+          "groups": 194
+        },
+        "topic": {
+          "rbo": 0.2056,
+          "groups": 25
+        }
+      }
+    }
+  },
+  "scored_at": "2026-10-13"
+}

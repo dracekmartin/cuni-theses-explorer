@@ -1,0 +1,175 @@
+{
+  "experiment": "05-search-v1",
+  "setup": "dspace",
+  "description": "The search of DSpace (OpenSearch over Discovery), restricted to the theses of the corpus, queries as typed.",
+  "run": "data/runs/05-search-v1/dspace.run",
+  "pipeline": {
+    "harvest": {
+      "source": "live DSpace search",
+      "date": "2026-10-13"
+    },
+    "strategy": {
+      "sources": [
+        "DSpace OpenSearch"
+      ],
+      "page_size": 100,
+      "max_depth": 1000,
+      "escaped": false
+    }
+  },
+  "cost": {
+    "pages": 3991,
+    "failed_or_partial_queries": [
+      "ki-0088-about-sentence-en",
+      "ki-0093-title-cs",
+      "ki-0166-detail-cs",
+      "ki-0166-detail-en"
+    ],
+    "zero_result_queries": 353
+  },
+  "eval_version": "v1",
+  "metrics": {
+    "known_item": {
+      "all": {
+        "queries": 1478,
+        "mrr@10": 0.4419,
+        "success@1": 0.4181,
+        "success@10": 0.4763,
+        "success@100": 0.479
+      },
+      "cross_lingual": {
+        "queries": 798,
+        "mrr@10": 0.3214,
+        "success@1": 0.2945,
+        "success@10": 0.3609,
+        "success@100": 0.3634
+      },
+      "same_language": {
+        "queries": 680,
+        "mrr@10": 0.5833,
+        "success@1": 0.5632,
+        "success@10": 0.6118,
+        "success@100": 0.6147
+      },
+      "by_type": {
+        "title": {
+          "queries": 394,
+          "mrr@10": 0.7802,
+          "success@1": 0.7487,
+          "success@10": 0.8274,
+          "success@100": 0.8299
+        },
+        "about-short": {
+          "queries": 288,
+          "mrr@10": 0.6787,
+          "success@1": 0.6389,
+          "success@10": 0.7396,
+          "success@100": 0.7465
+        },
+        "about-sentence": {
+          "queries": 396,
+          "mrr@10": 0.0707,
+          "success@1": 0.0707,
+          "success@10": 0.0707,
+          "success@100": 0.0707
+        },
+        "detail": {
+          "queries": 400,
+          "mrr@10": 0.3057,
+          "success@1": 0.2775,
+          "success@10": 0.3425,
+          "success@100": 0.345
+        }
+      },
+      "by_lang": {
+        "cs->cs": {
+          "queries": 376,
+          "mrr@10": 0.5122,
+          "success@1": 0.4973,
+          "success@10": 0.5399,
+          "success@100": 0.5452
+        },
+        "cs->en": {
+          "queries": 276,
+          "mrr@10": 0.2888,
+          "success@1": 0.2754,
+          "success@10": 0.3116,
+          "success@100": 0.3116
+        },
+        "cs->sk": {
+          "queries": 62,
+          "mrr@10": 0.1694,
+          "success@1": 0.1613,
+          "success@10": 0.1774,
+          "success@100": 0.1774
+        },
+        "en->cs": {
+          "queries": 375,
+          "mrr@10": 0.35,
+          "success@1": 0.312,
+          "success@10": 0.4027,
+          "success@100": 0.408
+        },
+        "en->en": {
+          "queries": 281,
+          "mrr@10": 0.6507,
+          "success@1": 0.6228,
+          "success@10": 0.6797,
+          "success@100": 0.6797
+        },
+        "en->sk": {
+          "queries": 85,
+          "mrr@10": 0.4122,
+          "success@1": 0.3765,
+          "success@10": 0.4706,
+          "success@100": 0.4706
+        },
+        "sk->sk": {
+          "queries": 23,
+          "mrr@10": 0.9239,
+          "success@1": 0.913,
+          "success@10": 0.9565,
+          "success@100": 0.9565
+        }
+      }
+    },
+    "topic": {
+      "all": {
+        "queries": 50,
+        "ndcg@10": 0.4942,
+        "p@10": 0.486,
+        "recall@100": 0.4136,
+        "judged@10": 1.0
+      }
+    },
+    "consistency": {
+      "all": {
+        "rbo": 0.4506,
+        "groups": 381
+      },
+      "by_type": {
+        "about-sentence": {
+          "rbo": 0.3333,
+          "groups": 3
+        },
+        "about-short": {
+          "rbo": 0.4484,
+          "groups": 112
+        },
+        "detail": {
+          "rbo": 0.0859,
+          "groups": 84
+        },
+        "title": {
+          "rbo": 0.6929,
+          "groups": 157
+        },
+        "topic": {
+          "rbo": 0.1792,
+          "groups": 25
+        }
+      }
+    }
+  },
+  "scored_at": "2026-10-13"
+}
