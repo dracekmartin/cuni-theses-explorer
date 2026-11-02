@@ -1,239 +1,141 @@
 # Architecture
 
-How the system is put together and why. Choices between alternatives live in
-[design decision records](decisions/); questions that experiments must answer first are
-collected at the end. Renaming a component here means renaming it in code and in the
-thesis text too.
+How the system is put together and why. Diagrams come from the C4 model in
+[workspace.dsl](workspace.dsl), and [diagrams/render.sh](diagrams/render.sh) renders them
+into [diagrams/](diagrams/). Choices between alternatives live in
+[design decision records](decisions/). Renaming a component here means renaming it in
+code and in the thesis text too.
 
-The document follows the data: first how a thesis gets into the system, then how
-a query is answered, then how the two generated features work. Storage and
-configuration details come after that.
+Chapters marked *pending* are not written yet. Their draft, in Czech, is
+`architektura-nastrel.md` in the
+[diplomkaManagement](https://github.com/dracekmartin/diplomkaManagement) repo.
 
-## The picture
+## 1. Goals and constraints
 
-Data flows left to right: the batch plane produces prepared data, the serving plane
-turns it into answers. Solid arrows are data flow; dotted arrows are model calls.
+The system makes the theses of Charles University accessible in three ways, as set by the
+[assignment](assignment.md): hybrid semantic and lexical search that works across
+languages, an interactive map of the corpus with generated explanations of why two theses
+are similar, and an AI overview that answers a question from cited theses. Who uses it
+and for what is in the [use cases](use-cases.md).
 
-```mermaid
-flowchart LR
-    DSpace[(DSpace UK)] --> Harvester
+Quality goals, in the order that decides a conflict:
 
-    subgraph batch [Batch plane]
-        direction TB
-        Harvester --> PdfCache[(PDF cache)]
-        PdfCache --> TextExtractor --> Chunker --> IndexWriter
-        IndexWriter --> NeighborGraphBuilder --> TopicMapBuilder
-    end
+1. Replaceable and comparable parts: embedding models, search strategies and whole
+   search engines can be swapped and compared on a fixed evaluation set (assignment,
+   UC11).
+2. Simple for users: search and the user interface stay simple. The public interface
+   knows only the default setup, and tools for maintainers are not linked from it.
+3. Faithful to the source: what DSpace does not publish, the system neither finds nor
+   shows. Errata, embargoes and withdrawn theses reach the index (UC10).
+4. Reproducible: every result records the evaluation set, the setup, the model revision
+   and the index build it came from, so it can be repeated.
+5. Fast and affordable: results within a few seconds (UC1), on hardware the university
+   can provide.
+6. Operable by one person on a single serving node.
 
-    subgraph data [Prepared data]
-        direction TB
-        VectorIndex[(vector indexes, per config)]
-        LexicalIndex[(lexical index, per config)]
-        NeighborGraph[(NeighborGraph)]
-        TopicMap[(TopicMap artifacts)]
-        ExplCache[(explanation cache)]
-    end
+Constraints:
 
-    subgraph serving [Serving plane]
-        direction TB
-        SearchService --> OverviewService
-        SearchService --> API
-        MapService --> API
-        OverviewService --> API
-        ExplanationService --> API
-        API --> WebUI
-    end
+- One developer. The system is a prototype ready for deployment: it does not have to run
+  in production, but it has to be shown that it could.
+- The system uses only self-hosted open source components and academic services, no
+  commercial APIs.
+- The system indexes full text only where DSpace publishes it openly. Metadata of every
+  record DSpace shows publicly is searchable too, as in DSpace.
+- The serving node is not known yet. The system's batch jobs (bulk embeddings, index
+  builds, evaluation runs) run on the MFF HPC cluster, which schedules jobs with SLURM and
+  offers GPU nodes. MetaCentrum, scheduled with PBS, is the alternative.
+- Languages and stack: Python and TypeScript ([0001](decisions/0001-languages-and-stack.md)),
+  Docker Compose ([0002](decisions/0002-containerization.md)). The cluster has no Docker,
+  so batch jobs there will run the same images under Podman or Apptainer. That changes
+  0002 and waits for its own record (chapter 10).
 
-    IndexWriter --> VectorIndex
-    IndexWriter --> LexicalIndex
-    NeighborGraphBuilder --> NeighborGraph
-    TopicMapBuilder --> TopicMap
+## 2. Context
 
-    VectorIndex --> SearchService
-    LexicalIndex --> SearchService
-    NeighborGraph --> MapService
-    TopicMap --> MapService
-    NeighborGraph --> ExplanationService
-    ExplCache <--> ExplanationService
+![System context](diagrams/context.svg)
 
-    Models{{model backends: e-INFRA / local / commercial}}
-    IndexWriter -.embed.-> Models
-    SearchService -.embed.-> Models
-    OverviewService -.generate.-> Models
-    ExplanationService -.generate.-> Models
-```
+| Who or what | Relation to the system |
+| --- | --- |
+| User (student, visitor, teacher) | searches theses, browses the topic map, reads AI overviews in a web browser |
+| Operator | watches the outcome of synchronization runs with DSpace and steps in when one reports a problem |
+| Maintainer | defines and compares search setups, runs evaluations |
+| API client | scripts and other tools using the public API. An MCP adapter for AI assistants is a later idea, outside the current use cases |
+| DSpace UK | source of thesis metadata, access status and texts: OAI-PMH in the xoai format and files over HTTPS. DSpace 6.4, read only |
+| e-INFRA CZ | academic OpenAI-compatible LLM API for overviews, explanations and relevance judgments in evaluation. For batch work such as relevance judgments, a self-hosted LLM on the faculty cluster can replace it |
+| Batch compute | MFF HPC cluster (SLURM, GPU nodes) or MetaCentrum (PBS). The system's own batch jobs run there: bulk embeddings, index builds, evaluation runs. Results come back as files |
 
-The stores in the middle are logical; their physical layout (Postgres schemas, files)
-is under Storage. Builders read the vector index to compute their outputs; those read
-edges are omitted for legibility, the pipeline order implies them. Model backends are
-external systems reached through small interfaces (see Model providers).
+## 3. Containers
 
-## How a thesis gets in
+*Pending:* web UI, reverse proxy, API with the search core as a library inside it, model
+server (needs a change of 0001, chapter 10), database with one writer per schema, batch
+scheduler, batch jobs (they run on the cluster, chapter 6), evaluation tool.
 
-1. **Harvester** syncs with the DSpace library API on a schedule: new theses, errata,
-   takedowns. Nothing is added by hand (UC10). Each pass is a recorded SyncRun; every
-   change creates a new document version, and downstream steps react to version changes.
-2. The PDF lands in the **PDF cache** (sizing and eviction under Storage).
-3. **TextExtractor** produces plain text into the catalog. DSpace publishes its own
-   extracted text next to each PDF (the TEXT bundle); whether to reuse it is an open
-   question.
-4. **Chunker** cuts the text into passages sized for the embedding model, respecting
-   sentence boundaries.
-5. **IndexWriter** builds both halves of the search index: chunk vectors (embedded
-   through the configured EmbeddingProvider) and the lexical index with Czech
-   lemmatization. The lexical index defaults to chunk-level too, so both branches rank
-   the same units and can feed passages to the overview; indexing whole documents
-   instead is part of the lexical open question. Also derives one vector per thesis
-   (construction is an open question).
-6. **NeighborGraphBuilder** finds each thesis's top-k most similar theses (k around 20
-   to 50) and stores only those edges. All pairs would be billions; the graph is a few
-   million edges, and it defines which pairs can ever get an explanation.
-7. **TopicMapBuilder** projects thesis vectors to 2D, clusters, labels the clusters and
-   exports versioned static artifacts that MapService serves as-is.
+## 4. Components
 
-Contract for the whole pipeline: incremental (touch only changed versions), idempotent
-(any step safe to re-run), resumable (per-thesis processing state lives in the catalog).
-The orchestration mechanism is deliberately undecided until the pipeline shape settles.
+*Pending:* search core in detail (searcher interface, step tree, platform wrapper, setups
+and registry, language handling), indexing, topic map and overview at a high level.
 
-## How a query is answered
+## 5. Runtime views
 
-1. The query runs through both branches of the hybrid search: the **semantic branch**
-   embeds it (using the query prompt the active model requires) and searches the vector
-   index; the **lexical branch** lemmatizes it and searches the lexical index. Lexical
-   matching without lemmatization is useless in Czech, so the lexical index needs
-   proper Czech analysis from the start.
-2. Reciprocal rank fusion merges the two chunk rankings, results aggregate to theses,
-   metadata filters apply (UC3), snippets come from the matching chunks.
-3. Which sources run and how they combine is a **SearchStrategy**. A strategy references
-   a set of ranking sources and a fusion; fusion does not care how many rankings it
-   merges. Variants: semantic only, lexical only, hybrid, an **ensemble** of several
-   embedding configurations fused together with the lexical branch, and later hybrid
-   with reranking. Strategies are configuration, comparable against each other (UC11).
+*Pending:* answering a query, indexing a new thesis version, a thesis withdrawn from
+DSpace, an evaluation run, an overview, an explanation of a neighbor edge.
 
-## Generated content
+## 6. Deployment
 
-Both generative features follow the same sequence: retrieve, generate, verify.
+*Pending:* development notebook, batch compute, serving node, and the hardware a full
+index needs.
 
-**Overview (UC8):**
+## 7. Crosscutting concepts
 
-1. Retrieve top passages for the question through SearchService (full hybrid).
-2. Deduplicate per thesis, cap the context size.
-3. The generation model answers only from the numbered passages, citing one on every claim.
-4. A verifier checks every claim against its cited passage. Unsupported claims are
-   dropped or the answer is regenerated; if retrieval found nothing solid, the answer
-   honestly says so.
-5. The complete verified answer returns at once (no streaming), so nothing shown is
-   later retracted. Answers may be cached by normalized question, search setup and model.
+*Pending:* plugins and registry, index manifests and snapshots, visibility guard, query
+safety check, protection against overload, language handling.
 
-**Similarity explanation (UC5):**
+## 8. Variability
 
-1. The user opens an edge of the NeighborGraph (from a thesis detail or the map).
-   Only graph edges can be asked about, which bounds the space of requests.
-2. **ExplanationService checks the explanation cache** (key: both thesis versions plus
-   the explanation model). Hit: serve stored text, which is the common case for
-   anything viewed before.
-3. Miss: gather representative chunks of both theses, have a configurable model
-   (default: a smaller one than the overview uses) describe what the works share,
-   verify the claims the same way as overview, store, serve. First viewer waits
-   a few seconds, everyone after reads the cache.
-4. Invalidation: a new version of either thesis drops the pair's cached explanations;
-   switching the active search setup drops the whole cache.
+*Pending:* what can be replaced, through which interface, at which time (configuration,
+deployment, code) and at what cost.
 
-Cost therefore scales with what people actually view rather than with corpus size.
+## 9. Quality scenarios
 
-## Storage
+*Pending:* change scenarios in six parts (source, stimulus, artifact, environment,
+response, response measure), carried out and measured in the thesis.
 
-One PostgreSQL instance with pgvector, split into schemas with single-writer ownership:
+## 10. Decisions
 
-| Schema | Writer | Contents |
-| --- | --- | --- |
-| `catalog` | Harvester, TextExtractor | theses, metadata, extracted text, document versions, sync runs, processing state |
-| `index_<config>` | IndexWriter | chunks, chunk vectors, lexical index, thesis vectors; one schema per retrieval configuration |
-| `artifacts` | graph and map builders | NeighborGraph edges, TopicMap versions |
-| `cache` | serving plane | explanation cache, overview cache |
+| Record | Decision |
+| --- | --- |
+| [0001](decisions/0001-languages-and-stack.md) | Python 3.13 and FastAPI, TypeScript and React, PostgreSQL with pgvector |
+| [0002](decisions/0002-containerization.md) | Docker Compose is how the system runs |
+| [0003](decisions/0003-engineering-quality.md) | engineering quality and its enforcement |
 
-Extracted text stays in the database: about 20 GB for the whole university, and it
-belongs transactionally to metadata and indexes. The **PDF cache** is the one store
-outside the database, and it is only a cache. The application never serves
-PDFs (results link to DSpace); local copies exist so extraction and chunking can be
-re-run without repeatedly downloading tens of thousands of files from a repository that
-already suffers under scraping traffic from others. Measured on a 549-document sample
-(September 2026): median PDF 1.6 MB, mean 4.7 MB, tail to 200 MB; the 120+ thousand
-item corpus lands around 400 to 700 GB, extracted text 10 to 30 times smaller. Once
-extraction is stable, PDFs can be evicted and re-fetched per file (say after an erratum).
+Planned records (numbers 0004 to 0009 are reserved for architecture decisions):
 
-## Retrieval configurations
+- models at query time behind adapters, in process or as a separate model server. It
+  changes the point of 0001 that there is no separate ML service.
+- batch jobs on the faculty cluster run the same images under Podman or Apptainer. It
+  changes 0002, which runs batch steps as compose commands.
+- the search core with replaceable searchers and steps, language handling, storage at full
+  scale.
 
-A **retrieval configuration** bundles the embedding model, chunking parameters and
-lexical setup. Vectors, indexes, NeighborGraph and TopicMap are all built per
-configuration, and several exist side by side. That serves two purposes: comparing
-configurations (UC11), and **ensembling** them, where a SearchStrategy fuses rankings
-from several configurations at query time.
+## 11. Glossary
 
-One asymmetry to keep in mind: search and the NeighborGraph can be ensembled (rankings
-fuse), but the TopicMap cannot, because it needs one geometric space to project. The map
-is always built from one designated configuration.
-
-The **active search setup** (the set of configurations plus the strategy) is what
-generation runs on; changing it drops the generation caches.
-
-## Model providers
-
-There is no central model component. Two small interfaces live where they are consumed:
-
-- **EmbeddingProvider** (used by IndexWriter and SearchService): embed passages and
-  queries. A provider instance carries model id, endpoint, vector dimensions and the
-  query prompt template the model requires.
-- **LLMProvider** (used by OverviewService and ExplanationService, configured
-  independently for each): generate text from a prompt.
-
-Implementations are thin adapters over an OpenAI-compatible HTTP endpoint or a local
-runtime. Where the models actually run is an open question with three candidates:
-**e-INFRA CZ** (academic OpenAI-compatible API, free for university users, data stays in
-the academic network; the primary candidate), **self-hosted** (Ollama or vLLM; full
-control, needs a GPU beyond small models), **commercial APIs** (a quality reference for
-benchmarks rather than a production dependency).
-
-## Domain language
+These are working names, the final naming is still open.
 
 | Term | Meaning |
 | --- | --- |
-| Thesis | one defended work: metadata, PDF, extracted text, document version |
-| Chunk | a passage of a thesis, the unit of embedding and retrieval |
-| Retrieval configuration | embedding model + chunking + lexical setup, the unit of comparison |
-| SearchStrategy | which ranking sources run for a query and how they fuse (semantic, lexical, hybrid, ensemble, ...) |
-| Search setup | the active set of configurations plus the strategy; generation and its caches are bound to it |
+| Thesis | one thesis record in DSpace: metadata, files, extracted text, document version |
+| Catalog | the system's record of all theses: versions, metadata, files and access status |
+| Chunk | a searchable piece of a thesis: a passage of the body, or a metadata chunk with the title, keywords and abstract in one language, as in the experiments. Text unit is the working name for this general notion |
+| Searcher | the interface of a whole search: query, filters and k in, ranked theses out |
+| Setup | a named configuration of a searcher. For the default searcher it is a tree of steps |
+| Step | one node of that tree: candidate source, fusion, aggregation, passage selection, reranking, filter or router |
+| Search strategy | the term of the assignment and of earlier documents for how ranking sources combine. Here it is the step tree of a setup |
+| Query analyzer | turns the query text into a query with language, lemmas and embeddings |
+| Index spec, index build | what an index is built from (chunking, encoder or analyzer) and one built instance, recorded with an index manifest (model, revision, snapshot, counts) |
+| Snapshot | the state of the catalog after one synchronization run |
+| SyncRun | one scheduled synchronization pass with its recorded outcome |
 | NeighborGraph | precomputed top-k similarity edges between theses |
 | TopicMap | precomputed, versioned 2D layout of the corpus with labeled clusters |
 | Explanation | generated text describing what two neighboring theses share, always cached |
 | Overview | verified generated answer to a question, grounded in cited theses |
-| EmbeddingProvider, LLMProvider | small interfaces hiding where models run |
-| SyncRun | one scheduled Harvester pass with its recorded outcome |
-
-## Open questions
-
-Each gets an experiment and then a decision record:
-
-1. **Lexical index technology and unit**: Postgres FTS with a Czech dictionary, learned
-   sparse vectors (SPLADE-style) in pgvector, or a dedicated engine (OpenSearch/Solr);
-   and chunk-level versus whole-document indexing. Note that Postgres tsvector cannot
-   hold a whole thesis (position limits), and SPLADE requires chunks, so the choice of
-   technology constrains the choice of unit.
-2. **Thesis vector construction**: pooled chunk vectors, abstract embedding, or
-   a dedicated document model.
-3. **Text extraction**: reuse the DSpace TEXT bundle or extract ourselves.
-4. **Model hosting**: which provider backends are practical (e-INFRA availability,
-   local hardware limits).
-5. **Pipeline orchestration**: scheduler and mechanism, once the pipeline shape settles.
-
-## Notes
-
-- **Language independence** (UC2): multilingual embeddings put Czech, English and
-  Slovak queries and documents into one vector space.
-- **Errata** (UC10): a changed or withdrawn thesis is a document version change; it is
-  re-extracted, re-indexed, removed from graphs, and its cached generations drop.
-  Search must never serve content the repository has redacted.
-- **API**: REST with an OpenAPI specification generated by the backend; the frontend
-  uses a typed client generated from it.
-- **Future, kept in mind, not designed**: cross-encoder reranking as another
-  SearchStrategy, exposing search to AI tools (MCP server).
+| Gate | a small replaceable check that lets an overview through or stops it with a reason |
+| EmbeddingProvider, Reranker, LLMProvider, Verifier | small interfaces hiding which model runs where |

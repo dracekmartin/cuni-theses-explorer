@@ -9,7 +9,8 @@ and ideation documents live in the sibling repo `dracekmartin/diplomkaManagement
 
 ## Repository map
 
-- `docs/`: use cases, architecture (with diagrams), design decisions
+- `docs/`: use cases, architecture (`architecture.md`, C4 model in `workspace.dsl`, SVG
+  views in `diagrams/` rendered by `diagrams/render.sh`), design decisions
 - `docs/decisions/`: design decision records, **the source of truth for decisions**.
   Never contradict a recorded decision silently: change the record (or add a superseding
   one) first.
