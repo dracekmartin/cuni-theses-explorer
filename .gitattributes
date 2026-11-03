@@ -1,0 +1,20 @@
+# Text files use LF everywhere, also in Windows working trees with core.autocrlf.
+* text=auto eol=lf
+
+# cmd.exe misreads labels in batch files with LF endings.
+*.[bB][aA][tT] text eol=crlf
+*.[cC][mM][dD] text eol=crlf
+
+# Never convert binary files, even when git cannot tell them from text. Patterns
+# match both cases because Linux checks them case sensitively.
+*.[pP][nN][gG] binary
+*.[jJ][pP][gG] binary
+*.[jJ][pP][eE][gG] binary
+*.[gG][iI][fF] binary
+*.[iI][cC][oO] binary
+*.[wW][eE][bB][pP] binary
+*.[pP][dD][fF] binary
+*.[wW][oO][fF][fF] binary
+*.[wW][oO][fF][fF]2 binary
+*.[gG][zZ] binary
+*.[zZ][iI][pP] binary
