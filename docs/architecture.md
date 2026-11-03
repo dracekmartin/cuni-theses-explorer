@@ -101,7 +101,7 @@ Each schema of the database has one writer:
 
 | Schema | Writer | Contents |
 | --- | --- | --- |
-| `catalog` | batch tools (synchronization, text extraction) | theses, versions, metadata, extracted texts, access status, synchronization runs |
+| `catalog` | batch tools (synchronization, text extraction, records of runs) | theses, versions, metadata, supervisors, twin groups, extracted texts, access status, runs of batch commands |
 | `chunks_<chunking>` | batch tools (chunking) | the chunks of one chunking, shared by every index build that uses it |
 | `index_<build>` | batch tools (index builds, imports, plugins through their index storage) | one schema per index build: its manifest, vectors and their index, lexical postings or the data of a plugin |
 | `artifacts` | batch tools (map builds) | neighbor graph, versions of the topic map with clusters and labels |
@@ -156,13 +156,13 @@ the core does not depend on them. The box Plugin steps stands for the steps of a
 installed plugins, and the first of them is the sparse source in `explorer_sparse`. The
 DSpace searcher is drawn as itself, because the assignment asks for a comparison with the
 search of DSpace. To stay readable, the view leaves out two arrows to the database. The
-setup loader reads the index manifests when the API starts, and the platform wrapper reads
-and writes its result cache in the schema `cache`.
+setup loader reads the index manifests when the API starts and then every few minutes, and
+the platform wrapper reads and writes its result cache in the schema `cache`.
 
 | Component | Responsibility | Package |
 | --- | --- | --- |
 | Search endpoints | REST endpoints for search and for the chunks that show why a thesis was found. Behind a login for maintainers also the list of setups, the choice of a setup and the trace. Everyone else gets the default setup | `explorer_api` |
-| Setup loader | reads the setup files when the API starts, checks them against the registry and the index manifests, and builds one searcher per setup. It refuses a setup whose index build is missing or whose query encoder does not match the index manifest | `explorer` |
+| Setup loader | reads the setup files when the API starts, checks them against the registry and the index manifests, and builds one searcher per setup. It refuses a setup whose index build is missing or whose query encoder does not match the index manifest. It reads the manifests again every few minutes | `explorer` |
 | Registry | names of searchers, steps and model adapters, each with a version. It finds plugins by entry points | `explorer` |
 | Platform wrapper | runs around every searcher: the query safety check, the query analysis, filters the searcher lacks, the visibility guard, chunks on request, the trace and a result cache for a few minutes | `explorer` |
 | Query safety check | stops or limits a query that looks for problematic places in theses, such as personal data. It is a set of small checks chosen by configuration | `explorer` |
@@ -308,8 +308,9 @@ input = "reranked"
   unknown key is an error, so that a result never claims a setting the code did not use.
 - `eval run` runs a setup over an evaluation set and writes a TREC run with the
   fingerprint.
-- The fingerprint is a hash of the normalized setup and the ids of its index builds. TREC
-  runs and the caches of results, overviews and explanations record it.
+- The fingerprint is a hash of the normalized setup and the ids of its index builds, each
+  with the snapshot it covers. TREC runs and the caches of results, overviews and
+  explanations record it.
 - A setup with a reported result is never edited. A change makes a new file, as with
   versions of the evaluation set.
 - Setups change only in the repository, the UI has no editor for them. The default setup
@@ -370,8 +371,160 @@ Reranker.score(query, texts) -> scores
 
 ### 4.2 Indexing
 
-*Pending:* harvest and catalog, text extraction, chunking, index builders and their
-imports.
+The batch tools keep the catalog, the chunks and the index builds in step with DSpace.
+Cron starts their regular commands on the serving node, and a maintainer starts the heavy
+ones by hand. Heavy jobs run on the cluster
+([0005](decisions/0005-batch-jobs-on-the-faculty-cluster.md)). Two views show the
+components: one for synchronization and texts, one for embeddings, index and map builds.
+Batch commands appear in both. Embeddings belong to index builds, not to synchronization:
+chunks do not depend on a model, and each index spec embeds them with its own model.
+
+![Components of synchronization and texts](diagrams/components-sync.svg)
+
+![Components of embeddings, index and map builds](diagrams/components-index.svg)
+
+| Component | Responsibility | Package |
+| --- | --- | --- |
+| Batch commands | CLI commands for synchronization, text extraction, chunking, index builds, cluster jobs and map builds. Cron starts the regular ones. Every run records its start, end, outcome and counts in the catalog, and the operator page shows them | `explorer_batch` |
+| Harvester | reads changed records from OAI-PMH in the xoai format and continues after a crash. It also finds withdrawn records, which OAI does not mark | `explorer` |
+| Catalog | the only writer of the schema `catalog`: versions of theses, metadata, access status, supervisors, twin groups, texts and the runs of batch commands | `explorer` |
+| Text extraction | takes the text file that DSpace makes from the PDF, or extracts the text from the public PDF where that file is missing or empty. It cleans abstracts and takes the abstract from the text where the metadata abstract is missing or cut | `explorer` |
+| Chunker | the only writer of chunks. It splits texts and metadata into the chunks of one chunking, detects the language of each chunk and deletes the chunks of versions that are gone | `explorer` |
+| Index builders | built-in builders of dense and lexical indexes. Each adds what changed since its last build and deletes its own entries of versions that are gone. The lexical builder lemmatizes each chunk with the lemmatizer of its language, the same one the query analyzer uses | `explorer` |
+| Plugin index builders | builders of the indexes that plugins bring, with the same contract | plugin packages, first `explorer_sparse` |
+| Cluster jobs | submit heavy jobs with their input to the cluster, fetch their results as files with manifests and import them: vectors and plugin indexes into index builds, map builds into artifacts | `explorer_batch` |
+| Map builder | builds thesis vectors, the neighbor graph and the topic map (section 4.3), on the serving node or as a cluster job | `explorer_map` |
+| Model adapters | the same HTTP adapters as in the API, for the embeddings and sparse weights of new chunks | `explorer` |
+
+#### Catalog and synchronization
+
+The catalog holds every thesis record that DSpace shows publicly, as DSpace finds theses
+with a locked text or with metadata only by their metadata too. Full text is used only
+where DSpace publishes it.
+
+- The harvester reads the records changed since the last run, page by page, and continues
+  where it stopped after a crash. A query for a single record (GetRecord) does not work on
+  DSpace UK, so the harvester always reads ranges of dates.
+- The date of change in OAI moves mostly with bulk saves in DSpace, and it need not move
+  when access changes, for example when an embargo ends on its date. A periodic full run
+  therefore reads all records again. It compares the list of ids in OAI with the catalog,
+  checks the pages of the theses, because a removed thesis can stay in OAI while its page
+  answers 404, and reads the fields of access (availability of files, the reason and end
+  of an embargo) of every record.
+- The catalog compares the content of a record and records a new version only when the
+  metadata or the files differ. The fields of access do not count, a change of access
+  changes the access status of the current version.
+
+DSpace UK does not version its records. An erratum is one more file next to the text, and
+the text itself stays. A version in the catalog is therefore the state of the metadata
+and files of a record as the harvester saw it. Chunks and index entries belong to one
+version, and the visibility guard compares them with the current one (section 4.1).
+
+When DSpace locks the text of a thesis, the catalog marks it as not public and the
+visibility guard hides its body chunks at once. Whether the text, its chunks and its
+vectors are also deleted, and how fast, is open (see Open below).
+
+The catalog also records:
+
+- Defence status: the field `uk.thesis.defenceStatus`, and where it is missing, the grade
+  (a failed grade gives N, a recognized one U, any other grade O, no grade no status).
+  Unsuccessful theses stay findable, and every attempt at a defence is a record of its
+  own, as in DSpace.
+- Supervisors: the name as DSpace writes it, "Surname, Name". Variants that differ only in
+  a trailing comma or spaces are joined, variants that differ in diacritics only after
+  a check. DSpace has no ids of persons, so namesakes stay one name.
+- Twin groups: a recognized rigorous thesis with its original thesis, or several records
+  of one thesis defended more than once. Search shows every record of a group, as DSpace
+  does. The map, the neighbor graph and the evaluation take one record of each group: the
+  last one with status O, which for a recognized rigorous thesis is its original thesis.
+- Errata, shown as one more file of the thesis.
+- Runs: every run of a batch command with its start, end, outcome and counts. A run of
+  synchronization is a SyncRun, and the state of the catalog after it is a snapshot.
+
+#### Texts and chunks
+
+- The text of a thesis is by default the text file that DSpace makes from the PDF. It
+  matches the text of the PDF and is about 40 times smaller. The body of a thesis is the
+  file described as "Text práce". A locked file answers with a redirect to an HTML page
+  instead of an error, so extraction checks what it got.
+- Where the text file is missing or empty and the PDF is public, the extractor reads the
+  PDF itself. PDFs are downloaded only for these theses and kept in file storage. Scans
+  without a text layer would need OCR, a later extractor behind the same interface.
+- Abstracts from the metadata are cleaned of HTML entities and of headers copied from the
+  PDF. Half of them are cut at about 1,320 characters and some theses have none, so the
+  extractor takes the abstract from the text where the metadata abstract is missing or
+  cut.
+- A chunking says how texts are split. The core starts with chunks of up to 1,000
+  characters, as in the experiments, and the evaluation decides the final size. Each chunk
+  records its thesis, version, position, source (body or metadata) and its language,
+  detected from its own text.
+- Metadata chunks hold the title, the keywords and the abstract, one language each.
+  Theses without public text get only metadata chunks.
+- Each chunking has its own schema `chunks_<chunking>`, shared by all index builds over it.
+  The chunker deletes the chunks of withdrawn and older versions. Until each build over
+  the chunking has caught up, the visibility guard hides its entries of those versions.
+
+#### Index builds
+
+An index spec says what an index is built from: a chunking and an encoder (model,
+revision, prompt, dimension) or an analyzer. An index build is one built instance in its
+own schema `index_<build>`, with a manifest: the spec, the model and its revision, the
+snapshot the build covers, counts, and where and when it was built.
+
+Every builder keeps the same contract:
+
+- It asks the catalog which versions to add and which to remove since its last build:
+  new and changed versions to add, older, withdrawn and no longer public ones to remove.
+  It deletes its own entries of the removed versions, so that their text does not stay in
+  the index.
+- It can run again without harm, and after a crash or a preempted job it continues where
+  it stopped.
+- Cached embeddings are keyed by a hash of the text, the chunking, the model and its
+  revision. A changed text or chunking never reuses old vectors.
+- The manifest records the snapshot the build covers. The setup loader in the API reads
+  the manifests again every few minutes, so an update of a build changes the fingerprint
+  of every setup that uses it without a restart, and a cached result never outlives the
+  index it came from.
+
+Where builds run:
+
+- New theses go into the existing builds on the serving node. The builders embed their
+  chunks through the model server.
+- A full build runs as a cluster job. The job processes the corpus in shards and keeps
+  its state per shard, so that a requeued job does not start again. It writes vectors with
+  a manifest as files. The batch tools fetch them into file storage and import them, and
+  the database on the serving node builds the vector index. A data directory is never
+  copied.
+- Plugin index builders keep the same contract. Their full builds run as cluster jobs too,
+  and the batch tools import the results into the index storage that the core gives the
+  plugin.
+- A map build runs on the serving node when it fits there, otherwise as a cluster job
+  whose results the batch tools import into `artifacts`.
+
+#### Open
+
+- How often synchronization, chunking and index updates run, and how often the map and
+  the neighbor graph are rebuilt. It depends on what each step costs, so the intervals
+  come after the first measurements.
+- How fast a withdrawn, corrected or locked thesis has to leave the texts, indexes and
+  caches, and whether backups have to forget it too. This waits for the supervisor.
+- Storage at full scale: PostgreSQL with pgvector stays until a scaling test on the
+  cluster shows whether it is enough, and whether the vector index needs quantization or
+  a smaller form (0005).
+- Whether thesis texts may stay in the storage of the cluster during jobs. This waits for
+  the administrators of the cluster.
+- Whether DSpace derives the defence status from the grade in the same way. The rule above
+  follows what the records show.
+
+#### Interfaces at the points of replacement
+
+```text
+Extractor.extract(version, files) -> text, or none with a reason
+Chunker.chunk(text, chunking) -> chunks with position and language
+Lemmatizer.lemmas(text, language) -> lemmas
+IndexBuilder.changes(catalog) -> versions to add and versions to remove since its last build
+IndexBuilder.build(changes) -> updated index build and its manifest
+```
 
 ### 4.3 Topic map and overview
 
@@ -424,7 +577,7 @@ These are working names, the final naming is still open.
 | Term | Meaning |
 | --- | --- |
 | Thesis | one thesis record in DSpace: metadata, files, extracted text, document version |
-| Catalog | the system's record of all theses: versions, metadata, files, extracted texts and access status |
+| Catalog | the system's record of all theses: versions, metadata, files, extracted texts, access status, supervisors, twin groups and runs of batch commands |
 | Chunk | a searchable piece of a thesis: a passage of the body, or a metadata chunk with the title, keywords and abstract in one language, as in the experiments. Text unit is the working name for this general notion |
 | Searcher | the interface of a whole search: query, filters and a limit in, ranked theses out |
 | PipelineSearcher | the default searcher, which runs the step tree of a setup |
@@ -432,7 +585,7 @@ These are working names, the final naming is still open.
 | Step | one node of that tree: candidate source, fusion, aggregation, passage selection, reranking, filter or router |
 | Branch | the part of a step tree that feeds one input of a fusion |
 | Candidate | a chunk or a thesis passed between steps, with its score and rank in each branch, its language and the branches that could see it |
-| Fingerprint | a hash of a normalized setup and the ids of its index builds. Every result records it |
+| Fingerprint | a hash of a normalized setup and the ids of its index builds with the snapshots they cover. Every result records it |
 | Search strategy | the term of the assignment and of earlier documents for how ranking sources combine. Here it is the step tree of a setup |
 | Query analyzer | turns the query text into a query with language and its confidence, lemmas and embeddings |
 | Platform wrapper | the part of the core that runs around every searcher: query safety check, query analysis, filters, visibility guard, chunks on request, trace, result cache |
@@ -442,9 +595,12 @@ These are working names, the final naming is still open.
 | Index spec, index build | what an index is built from (a chunking, an encoder or analyzer) and one built instance, recorded with an index manifest (model, revision, snapshot, counts) |
 | Registry | the list of named searchers, steps, model adapters and plugins that a setup can refer to |
 | Plugin | a separate package that adds a searcher, a step or an index to the registry without changes to the core |
-| Index storage | the place a plugin gets for its own index: a schema in PostgreSQL or a folder of files |
+| Index storage | the schema `index_<build>` in PostgreSQL that the core gives a plugin for its own index |
 | Snapshot | the state of the catalog after one synchronization run |
 | SyncRun | one scheduled synchronization pass with its recorded outcome |
+| Twin group | records of one work: a recognized rigorous thesis with its original thesis, or the records of several attempts to defend one thesis |
+| Extractor | gets the text of a thesis version: the text file of DSpace, the PDF itself, later OCR |
+| Lemmatizer | turns the words of one language into their base forms, for lexical indexes and queries |
 | NeighborGraph | precomputed top-k similarity edges between theses |
 | TopicMap | precomputed, versioned 2D layout of the corpus with labeled clusters |
 | Explanation | generated text describing what two neighboring theses share, always cached |

@@ -34,7 +34,18 @@ workspace "Theses Explorer" "Hybrid search, topic map and AI overview over the t
                 files = container "File storage" "Results of cluster jobs (vectors, map builds) with their manifests, kept for a repeated import, and PDFs for own text extraction. Used only by the batch tools." "File system" "Database"
             }
             group "Batch" {
-                batchTools = container "Batch tools" "Synchronization with DSpace, chunking, index builds and imports, map builds. Started by cron on the serving node, heavy jobs on the cluster (SLURM) or MetaCentrum (PBS)." "Python, explorer_batch"
+                batchTools = container "Batch tools" "Synchronization with DSpace, chunking, index builds and imports, map builds. Started by cron on the serving node, heavy jobs on the cluster (SLURM) or MetaCentrum (PBS)." "Python, explorer_batch" {
+                    commands = component "Batch commands" "CLI commands for synchronization, text extraction, chunking, index builds, cluster jobs and map builds. Cron starts the regular ones. Every run records its outcome." "explorer_batch"
+                    harvester = component "Harvester" "Reads changed records from OAI-PMH and continues after a crash. Finds withdrawn records, which OAI does not mark." "explorer"
+                    catalog = component "Catalog" "The only writer of the schema catalog: versions, metadata, access status, supervisors, twin groups, texts, runs of batch commands." "explorer"
+                    extraction = component "Text extraction" "Takes the text file of DSpace, or extracts the text from the public PDF where that file is missing or empty. Cleans abstracts." "explorer"
+                    chunker = component "Chunker" "The only writer of chunks. Splits texts and metadata into the chunks of one chunking and detects the language of each chunk." "explorer"
+                    builders = component "Index builders" "Built-in builders of dense and lexical indexes. Each adds what changed since its last build and deletes its entries of versions that are gone." "explorer"
+                    pluginBuilders = component "Plugin index builders" "Builders of the indexes that plugins bring, with the same contract." "plugin packages" "Plugin"
+                    jobs = component "Cluster jobs" "Submit heavy jobs with their input, fetch their results as files with manifests, import them into the database." "explorer_batch"
+                    mapBuilder = component "Map builder" "Builds thesis vectors, the neighbor graph and the topic map, on the serving node or as a cluster job." "explorer_map"
+                    adapters = component "Model adapters" "The same HTTP adapters as in the API, for the embeddings and sparse weights of new chunks." "explorer"
+                }
                 evalTool = container "Evaluation tool" "Runs setups over an evaluation set on the notebook or as a job on the cluster, writes TREC runs and scores them." "Python, explorer_eval"
             }
         }
@@ -54,6 +65,7 @@ workspace "Theses Explorer" "Hybrid search, topic map and AI overview over the t
         operator -> explorer.webUi "Checks synchronization runs on the operator page" "HTTPS"
         maintainer -> explorer.webUi "Compares two setups on the hidden comparison page" "HTTPS"
         maintainer -> explorer.batchTools "Starts index builds and heavy jobs" "CLI"
+        maintainer -> explorer.batchTools.commands "Starts commands by hand" "CLI"
         maintainer -> explorer.evalTool "Runs evaluations" "CLI"
         apiClient -> explorer.proxy "Calls the public API" "HTTPS, JSON"
 
@@ -94,6 +106,31 @@ workspace "Theses Explorer" "Hybrid search, topic map and AI overview over the t
         explorer.api.ranking -> explorer.api.adapters "Reranks candidates"
         explorer.api.adapters -> explorer.modelServer "Calls the models" "HTTP"
         explorer.api.dspaceSearcher -> dspace "Searches DSpace" "HTTPS"
+        explorer.batchTools.commands -> explorer.batchTools.catalog "Records every run"
+        explorer.batchTools.commands -> explorer.batchTools.harvester "Runs synchronization"
+        explorer.batchTools.commands -> explorer.batchTools.extraction "Runs text extraction"
+        explorer.batchTools.commands -> explorer.batchTools.chunker "Runs chunking"
+        explorer.batchTools.commands -> explorer.batchTools.builders "Runs index builds and updates"
+        explorer.batchTools.commands -> explorer.batchTools.pluginBuilders "Runs them like built-in builders"
+        explorer.batchTools.commands -> explorer.batchTools.jobs "Submits heavy jobs, imports their results"
+        explorer.batchTools.commands -> explorer.batchTools.mapBuilder "Runs map builds"
+        explorer.batchTools.harvester -> dspace "Harvests changed records, checks for withdrawn ones" "OAI-PMH, HTTPS"
+        explorer.batchTools.harvester -> explorer.batchTools.catalog "Records new, changed and withdrawn versions"
+        explorer.batchTools.extraction -> dspace "Downloads text files, and PDFs where needed" "HTTPS"
+        explorer.batchTools.extraction -> explorer.files "Keeps downloaded PDFs" "File system"
+        explorer.batchTools.extraction -> explorer.batchTools.catalog "Stores texts and abstracts"
+        explorer.batchTools.catalog -> explorer.database "Writes the schema catalog" "SQL"
+        explorer.batchTools.chunker -> explorer.database "Reads texts of changed versions, writes and deletes chunks" "SQL"
+        explorer.batchTools.builders -> explorer.database "Reads changes and chunks, writes index builds" "SQL"
+        explorer.batchTools.builders -> explorer.batchTools.adapters "Embeds chunks"
+        explorer.batchTools.pluginBuilders -> explorer.database "Read changes and chunks, write their index storage" "SQL"
+        explorer.batchTools.pluginBuilders -> explorer.batchTools.adapters "Call the models they need"
+        explorer.batchTools.adapters -> explorer.modelServer "Calls the models" "HTTP"
+        explorer.batchTools.jobs -> batch "Submits jobs, fetches their results" "SSH, SLURM or PBS"
+        explorer.batchTools.jobs -> explorer.files "Stores results with manifests, reads them for import" "File system"
+        explorer.batchTools.jobs -> explorer.database "Imports vectors, plugin indexes and map builds" "SQL"
+        explorer.batchTools.mapBuilder -> explorer.database "Reads thesis vectors, writes artifacts" "SQL"
+        explorer.batchTools.mapBuilder -> einfra "Labels the clusters of the topic map" "HTTPS, OpenAI API"
         explorer.evalTool -> explorer.database "Runs setups against the indexes" "SQL"
         explorer.evalTool -> einfra "Judges relevance" "HTTPS, OpenAI API"
         explorer.evalTool -> explorer.modelServer "Embeds queries, reranks candidates" "HTTP"
@@ -146,6 +183,20 @@ workspace "Theses Explorer" "Hybrid search, topic map and AI overview over the t
             include explorer.api.endpoints explorer.api.loader explorer.api.registry explorer.api.wrapper explorer.api.safety explorer.api.guard explorer.api.pipeline explorer.api.analyzer explorer.api.sources explorer.api.ranking explorer.api.pluginSteps explorer.api.dspaceSearcher explorer.api.adapters
             exclude "explorer.api.loader -> explorer.database"
             exclude "explorer.api.wrapper -> explorer.database"
+            autoLayout lr
+        }
+
+        component explorer.batchTools "components-sync" {
+            title "Components: synchronization and texts"
+            include maintainer explorer.database explorer.files dspace
+            include explorer.batchTools.commands explorer.batchTools.harvester explorer.batchTools.catalog explorer.batchTools.extraction explorer.batchTools.chunker
+            autoLayout lr
+        }
+
+        component explorer.batchTools "components-index" {
+            title "Components: embeddings, index and map builds"
+            include maintainer explorer.database explorer.files explorer.modelServer einfra batch
+            include explorer.batchTools.commands explorer.batchTools.builders explorer.batchTools.pluginBuilders explorer.batchTools.jobs explorer.batchTools.mapBuilder explorer.batchTools.adapters
             autoLayout lr
         }
 
