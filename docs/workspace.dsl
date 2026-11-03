@@ -28,7 +28,7 @@ workspace "Theses Explorer" "Hybrid search, topic map and AI overview over the t
                     adapters = component "Model adapters" "HTTP adapters of EmbeddingProvider, SparseEncoder and Reranker." "explorer"
                     answerEndpoints = component "Overview and map endpoints" "REST endpoints for the overview, the explanation of a neighbor edge, the topic map of one version and the neighbors of a thesis." "FastAPI, explorer_api"
                     overview = component "Overview" "Answers a question from the theses the search found: selects chunks, lets an LLM write an answer with citations, keeps only verified claims." "explorer"
-                    gates = component "Gates" "Small checks that let an overview through or stop it with a reason. The safety gate always runs." "explorer"
+                    gates = component "Gates" "Small checks that let an overview through or stop it with a reason. The safety gate cannot be switched off." "explorer"
                     explanations = component "Explanations" "Explain what two neighboring theses share, from the stored chunk pairs of their edge." "explorer"
                     mapReader = component "Map reader" "Reads one version of the topic map and the neighbors of a thesis." "explorer"
                     llmAdapters = component "LLM adapters" "HTTP adapters of LLMProvider and Verifier." "explorer"
@@ -236,6 +236,94 @@ workspace "Theses Explorer" "Hybrid search, topic map and AI overview over the t
             include maintainer
             include explorer.evalTool explorer.database explorer.modelServer
             include dspace einfra batch
+            autoLayout lr
+        }
+
+        dynamic explorer.api "runtime-query" {
+            title "Runtime: a query with the default setup"
+            explorer.proxy -> explorer.api.endpoints "Forwards the query and the filters"
+            explorer.api.endpoints -> explorer.api.loader "Takes the searcher of the default setup"
+            explorer.api.endpoints -> explorer.api.wrapper "Runs the search"
+            explorer.api.wrapper -> explorer.api.safety "Checks the query"
+            explorer.api.wrapper -> explorer.api.analyzer "Analyzes the query once"
+            explorer.api.analyzer -> explorer.api.adapters "Embeds the query"
+            explorer.api.adapters -> explorer.modelServer "Calls the encoder"
+            explorer.api.wrapper -> explorer.api.pipeline "Searches with the analyzed query"
+            explorer.api.pipeline -> explorer.api.sources "Runs the candidate sources in parallel"
+            explorer.api.sources -> explorer.database "Searches the index builds"
+            explorer.api.pipeline -> explorer.api.ranking "Runs the inner steps of the tree"
+            explorer.api.ranking -> explorer.api.adapters "Reranks the top candidates"
+            explorer.api.adapters -> explorer.modelServer "Calls the reranker"
+            explorer.api.wrapper -> explorer.database "Caches the result for a few minutes"
+            explorer.api.wrapper -> explorer.api.guard "Drops what is not public now"
+            explorer.api.guard -> explorer.database "Reads access status and versions"
+            autoLayout lr
+        }
+
+        dynamic explorer "runtime-new-thesis" {
+            title "Runtime: a new thesis from DSpace to a search result"
+            explorer.batchTools -> dspace "Harvests the new record and its text file"
+            explorer.batchTools -> explorer.database "Records the version, its text and its chunks"
+            explorer.batchTools -> explorer.modelServer "Embeds the new chunks"
+            explorer.batchTools -> explorer.database "Adds them to the index builds, updates the manifests"
+            explorer.api -> explorer.database "Reads the manifests again, uses the new snapshot"
+            user -> explorer.webUi "Searches"
+            explorer.webUi -> explorer.proxy "Calls the API"
+            explorer.proxy -> explorer.api "Forwards the query"
+            explorer.api -> explorer.modelServer "Embeds the query, reranks"
+            explorer.api -> explorer.database "Finds the thesis in the index builds"
+            autoLayout lr
+        }
+
+        dynamic explorer "runtime-withdrawn" {
+            title "Runtime: a thesis withdrawn from DSpace"
+            explorer.batchTools -> dspace "Finds in the periodic full run that its page answers 404"
+            explorer.batchTools -> explorer.database "Marks the thesis as withdrawn in the catalog"
+            user -> explorer.webUi "Searches or opens the map"
+            explorer.webUi -> explorer.proxy "Calls the API"
+            explorer.proxy -> explorer.api "Forwards the request"
+            explorer.api -> explorer.database "Drops the thesis from results and caches, lists it as hidden with the map"
+            explorer.batchTools -> explorer.database "Deletes its chunks and index entries in the next runs"
+            autoLayout lr
+        }
+
+        dynamic explorer "runtime-evaluation" {
+            title "Runtime: an evaluation run"
+            maintainer -> explorer.evalTool "Starts eval run with a setup and a version of the evaluation set"
+            explorer.evalTool -> explorer.database "Runs the setup on every query against the index builds of the corpus of the set"
+            explorer.evalTool -> explorer.modelServer "Embeds the queries, reranks"
+            explorer.evalTool -> dspace "Searches DSpace, for the DSpace setup only"
+            autoLayout lr
+        }
+
+        dynamic explorer.api "runtime-overview" {
+            title "Runtime: an overview"
+            explorer.proxy -> explorer.api.answerEndpoints "Asks for the overview of a query"
+            explorer.api.answerEndpoints -> explorer.api.overview "Asks for an overview"
+            explorer.api.overview -> explorer.api.wrapper "Gets the result and the analyzed query of the same search"
+            explorer.api.overview -> explorer.database "Looks for a cached overview"
+            explorer.api.overview -> explorer.api.adapters "Scores the chunks with the reranker"
+            explorer.api.adapters -> explorer.modelServer "Calls the reranker"
+            explorer.api.overview -> explorer.api.gates "First gate and safety gate on the chunks"
+            explorer.api.overview -> explorer.api.llmAdapters "Writes the answer with citations"
+            explorer.api.llmAdapters -> einfra "Calls the LLM"
+            explorer.api.overview -> explorer.api.llmAdapters "Verifies each claim"
+            explorer.api.llmAdapters -> einfra "Calls the LLM"
+            explorer.api.overview -> explorer.api.gates "Second gate and safety gate on the answer"
+            explorer.api.overview -> explorer.database "Caches the overview"
+            autoLayout lr
+        }
+
+        dynamic explorer.api "runtime-explanation" {
+            title "Runtime: an explanation of a neighbor edge"
+            explorer.proxy -> explorer.api.answerEndpoints "Asks why two theses are neighbors"
+            explorer.api.answerEndpoints -> explorer.api.explanations "Asks for an explanation"
+            explorer.api.explanations -> explorer.database "Looks for a cached explanation"
+            explorer.api.explanations -> explorer.api.guard "Checks both theses"
+            explorer.api.explanations -> explorer.database "Reads the chunk pairs of the edge"
+            explorer.api.explanations -> explorer.api.llmAdapters "Generates and verifies the explanation"
+            explorer.api.llmAdapters -> einfra "Calls the LLM"
+            explorer.api.explanations -> explorer.database "Caches the explanation"
             autoLayout lr
         }
 

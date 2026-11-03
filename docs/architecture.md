@@ -183,10 +183,9 @@ The default searcher is built from steps, and each step can be replaced too.
 
 The searcher gets an analyzed query, filters and a limit on the number of results. It
 returns ranked theses, each with its id, version and score, optionally with the chunks
-behind the match, and a trace. The API, the evaluation tool, the overview and the
-explanations call nothing else. A searcher has to return ranked theses, everything else
-is optional. It reports its capabilities (filters, chunks, languages, the index it
-needs).
+behind the match, and a trace. The API, the evaluation tool and the overview call nothing
+else. A searcher has to return ranked theses, everything else is optional. It reports its
+capabilities (filters, chunks, languages, the index it needs).
 
 The platform wrapper runs the query safety check and the query analyzer once, then calls
 the searcher. It also adds what the searcher lacks:
@@ -196,7 +195,8 @@ the searcher. It also adds what the searcher lacks:
 - Visibility: an index can be older than the catalog, so the visibility guard checks every
   result against the current state of the catalog. It drops theses that are no longer
   public, chunks of older versions, and body chunks of a thesis whose text DSpace locked
-  or put under embargo after indexing.
+  or put under embargo after indexing. The wrapper caches results before the guard, so the
+  guard also checks a result that comes from the cache.
 - Chunks: the result list carries no text of chunks. When a user asks why a thesis was
   found, the wrapper runs passage selection for that thesis, which picks its chunks
   nearest to the query. This works for searchers that return no chunks, such as DSpace,
@@ -220,13 +220,13 @@ evaluation tool stay unchanged.
 
 #### Step tree
 
-PipelineSearcher composes a search from steps, and every step gets the analyzed query.
-A step takes ranked lists of candidates and returns one. A branch is the part of the tree
+PipelineSearcher composes a search from steps, and every step gets the analyzed query. A
+step takes ranked lists of candidates and returns one. A branch is the part of the tree
 that feeds one input of a fusion, often a single candidate source. A candidate is a chunk
 or a thesis with its score and rank in each branch, its language and the branches that
-could see it. All steps take and return the same kind of list, so
-a step fits anywhere in the tree. A whole other searcher can be a leaf, and its results
-can then be fused with others or reranked.
+could see it. All steps take and return the same kind of list, and a candidate is a chunk
+or a thesis, so a step fits wherever its unit fits. A whole other searcher can be a leaf,
+and its results can then be fused with others or reranked.
 
 | Step | Input | Output | Variants |
 | --- | --- | --- | --- |
@@ -304,14 +304,15 @@ input = "reranked"
 - An index spec lies in a file of its own: chunking, model, revision, prompt. A new setup
   costs nothing, a new index spec needs a new index build.
 - `setups check` checks a setup: an unknown key or step type, a reference to a missing
-  step, an index without a finished build, a query encoder that does not match the index
-  manifest. It prints the setup with its defaults filled in and its fingerprint. An
-  unknown key is an error, so that a result never claims a setting the code did not use.
-- `eval run` runs a setup over an evaluation set and writes a TREC run with the
-  fingerprint.
+  step, a cycle, a step that gets chunks where it needs theses or the other way round, an
+  index without a finished build, a query encoder that does not match the index manifest.
+  It prints the setup with its defaults filled in and its fingerprint. An unknown key is
+  an error, so that a result never claims a setting the code did not use.
+- `eval run` runs a setup over an evaluation set and writes a TREC run, with a results
+  file next to it that holds the fingerprint.
 - The fingerprint is a hash of the normalized setup and the ids of its index builds, each
-  with the snapshot it covers. TREC runs and the caches of results, overviews and
-  explanations record it.
+  with the snapshot it covers. The results files of TREC runs and the caches of results
+  and overviews record it.
 - A setup with a reported result is never edited. A change makes a new file, as with
   versions of the evaluation set.
 - Setups change only in the repository, the UI has no editor for them. The default setup
@@ -352,10 +353,10 @@ that could see a candidate fixes that for queries in another language. It also l
 score of a thesis in the language of the query that only the dense source found.
 
 The core is designed for every way of handling the lexical branch: the fusion rule above,
-lexical search over metadata chunks only, the reranker alone, no lexical branch at all,
-and translation of the query as an optional step. Translation is the only one that needs
-extra work, and it may wait. The evaluation decides the default, together with the
-default fusion, the size of chunks and the place of the reranker.
+lexical search over metadata chunks only, leaving the correction to the reranker, no
+lexical branch at all, and translation of the query as an optional step. Translation is
+the only one that needs extra work, and it may wait. The evaluation decides the default,
+together with the default fusion, the size of chunks and the place of the reranker.
 
 #### Interfaces at the points of replacement
 
@@ -542,7 +543,7 @@ section 4.1, and the view of that section shows their other relations.
 | --- | --- | --- |
 | Overview and map endpoints | REST endpoints for the overview, the explanation of a neighbor edge, the topic map of one version and the neighbors of a thesis | `explorer_api` |
 | Overview | answers a question from the theses the search found: selects chunks, lets an LLM write an answer with citations and keeps only the claims the verifier confirms | `explorer` |
-| Gates | small checks that let an overview through or stop it with a reason. The safety gate always runs, the configuration of the overview names the others | `explorer` |
+| Gates | small checks that let an overview through or stop it with a reason. The safety gate cannot be switched off, the configuration of the overview names the others | `explorer` |
 | Explanations | explain what two neighboring theses share, from the stored chunk pairs of their edge. An explanation is generated on the first request and then cached | `explorer` |
 | Map reader | reads one version of the topic map and the neighbors of a thesis from `artifacts` | `explorer` |
 | LLM adapters | HTTP adapters of LLMProvider and Verifier, which call e-INFRA or a self-hosted LLM | `explorer` |
@@ -606,10 +607,12 @@ changes, is withdrawn or loses its public text (chapter 3).
   for a strong and a weak match, so the overview scores its chunks with the reranker even
   when the search setup has none. The second gate runs after verification and stops an
   answer with too few supported claims. The safety gate keeps the overview from
-  summarizing problematic places in theses, such as personal data. It always runs, as the
-  query safety check does, and the configuration names the other gates. Each gate gets
-  the query and the chunks or the verified answer and returns pass, or stop with a reason,
-  so a new gate needs no change elsewhere.
+  summarizing problematic places in theses, such as personal data. It checks the chunks
+  before generation, so that such content never reaches the LLM, and the answer after
+  verification. It cannot be switched off, as the query safety check cannot, and the
+  configuration names the other gates. Each gate gets the query and the chunks or the
+  verified answer and returns pass, or stop with a reason, so a new gate needs no change
+  elsewhere.
 - The answer is in the language of the UI, unless the query analyzer is confident that the
   query is in another language.
 - The cache key is the normalized query, the filters, the language of the answer, the
@@ -648,8 +651,103 @@ Verifier.verify(claim, chunk) -> supported or not
 
 ## 5. Runtime views
 
-*Pending:* answering a query, indexing a new thesis version, a thesis withdrawn from
-DSpace, an evaluation run, an overview, an explanation of a neighbor edge.
+Each view numbers the requests in their order. Answers go back the same way and are not
+drawn.
+
+### 5.1 A query with the default setup
+
+![Runtime of a query with the default setup](diagrams/runtime-query.svg)
+
+- The query analyzer runs once per query (steps 5 to 7) and computes only the embeddings
+  that the steps of the setup need.
+- The candidate sources run in parallel (step 9). Sources that support filters get them,
+  filter steps of the tree apply the rest, and the wrapper only adds the filters that
+  a searcher lacks as a whole (section 4.1).
+- The wrapper caches the result before the visibility guard (step 14). The guard then
+  checks every result, also one from the cache (steps 15 and 16), because an index build
+  and a cached result can be older than the catalog.
+- The result carries no text of chunks. When a user asks why a thesis was found, a second
+  request lets the wrapper run passage selection for that thesis.
+- With the fallback setup without the reranker, steps 12 and 13 drop out.
+
+### 5.2 A new thesis from DSpace to a search result
+
+![Runtime of a new thesis from DSpace to a search result](diagrams/runtime-new-thesis.svg)
+
+- Cron starts steps 1 to 4 on the serving node: synchronization, text extraction, chunking
+  and the update of the index builds. A thesis that needs its own text extraction also
+  gets its PDF downloaded.
+- A full build, for example for a new index spec, runs as a cluster job instead of steps 3
+  and 4, and the batch tools import its result (section 4.2).
+- The setup loader reads the manifests again every few minutes (step 5). The fingerprints
+  of the setups then change without a restart, and cached results of the old snapshot no
+  longer match.
+- The thesis reaches the topic map only with the next map build.
+
+### 5.3 A thesis withdrawn or corrected in DSpace
+
+![Runtime of a thesis withdrawn from DSpace](diagrams/runtime-withdrawn.svg)
+
+- OAI does not mark withdrawn records. The periodic full run finds them by the list of ids
+  and by pages that answer 404 (step 1).
+- Step 6 stands for three things in the API. The visibility guard drops the thesis from
+  every result, cached ones included, the API drops cached overviews and explanations that
+  cite it, and the map comes with the thesis on its list of hidden theses.
+- The chunker deletes the chunks of the thesis and each builder its entries, in their next
+  runs (step 7). How fast this has to happen is open (section 4.2).
+- A corrected thesis, whose metadata or files changed, gets a new version. The visibility
+  guard hides the entries of the old version at once, and the next runs replace them with
+  the chunks and entries of the new version.
+- A text that DSpace locks works like a withdrawal for the body chunks: the guard hides
+  them at once, and whether they are deleted is open.
+
+### 5.4 An evaluation run
+
+![Runtime of an evaluation run](diagrams/runtime-evaluation.svg)
+
+- `eval run` loads the setup by its name through the same setup loader and platform
+  wrapper as the API (section 4.1), so it measures the code that serves users.
+- The run searches only the corpus of the evaluation set. Each version of the set has its
+  own index builds over its corpus, so a run ranks only those theses and repeats with the
+  same builds.
+- It writes a TREC run and, next to it, a results file with the fingerprint of the setup
+  and the trace of each step. `eval/score.py` reads the run named in the results file and
+  writes the metrics into that file. Among them is judged@10, the share of the top 10 that
+  has a judgment.
+- A run judges nothing. The pooled theses are graded with an LLM while a version of the
+  evaluation set is prepared, before it is frozen. A run calls an LLM only when its setup
+  uses one, for example as a reranker.
+- Setups that share steps with the same configuration and inputs run them only once.
+- At full scale the run is a cluster job
+  ([0005](decisions/0005-batch-jobs-on-the-faculty-cluster.md)). A cluster job cannot
+  reach the database of the serving node, so the job needs the index builds of the set
+  inside it. How it gets them is open until the scaling test.
+
+### 5.5 An overview
+
+![Runtime of an overview](diagrams/runtime-overview.svg)
+
+- The cache key needs the language of the answer, which comes from the query analysis, so
+  the overview first gets the result of the search (step 3). A cached overview with the
+  same key then ends the request at step 4.
+- Step 3 takes the result of the search from the short cache of the platform wrapper. When
+  the entry has expired, the wrapper runs the search again.
+- The first gate needs a score that says how well a chunk fits the query, so the reranker
+  scores the chunks even when the setup has none (steps 5 to 7).
+- The safety gate checks the chunks before they reach the LLM (step 7) and the answer after
+  verification (step 12).
+- Any gate can stop the overview. The API then returns the reason instead of an overview,
+  and the results of the search stay as they are.
+
+### 5.6 An explanation of a neighbor edge
+
+![Runtime of an explanation of a neighbor edge](diagrams/runtime-explanation.svg)
+
+- A cached explanation ends the request at step 3.
+- The visibility guard checks both theses (step 4), so a thesis withdrawn or locked after
+  the map build never reaches the LLM.
+- The LLM sees only the stored chunk pairs of the edge, and the verifier checks the claims
+  against them (steps 5 to 7).
 
 ## 6. Deployment
 
@@ -681,9 +779,11 @@ response, response measure), carried out and measured in the thesis.
 | [0003](decisions/0003-engineering-quality.md) | engineering quality and its enforcement |
 | [0004](decisions/0004-models-at-query-time.md) | models behind interfaces, adapters in process or over HTTP, one model server for all programs in deployment |
 | [0005](decisions/0005-batch-jobs-on-the-faculty-cluster.md) | heavy batch jobs on the faculty cluster, results come back as files |
+| [0006](decisions/0006-search-core-with-replaceable-searchers.md) | a whole search behind the searcher interface, the default searcher as a tree of steps from a TOML setup, plugins through the registry |
+| [0007](decisions/0007-language-handling.md) | the language of each chunk from its text, Czech, Slovak and English as full languages, queries with no language, the default handling of the lexical branch left to the evaluation |
 
-Planned records (numbers up to 0009 are reserved for architecture decisions): the search
-core with replaceable searchers and steps, language handling, storage at full scale.
+Numbers up to 0009 are reserved for architecture decisions. Planned: storage at full
+scale, after the scaling test on the cluster.
 
 ## 11. Glossary
 
@@ -697,6 +797,7 @@ These are working names, the final naming is still open.
 | Searcher | the interface of a whole search: query, filters and a limit in, ranked theses out |
 | PipelineSearcher | the default searcher, which runs the step tree of a setup |
 | Setup | a named configuration of a searcher. For the default searcher it is a tree of steps |
+| Fallback setup | the setup without the reranker that a node without a GPU serves instead of the default setup |
 | Step | one node of that tree: candidate source, fusion, aggregation, passage selection, reranking, filter or router |
 | Branch | the part of a step tree that feeds one input of a fusion |
 | Candidate | a chunk or a thesis passed between steps, with its score and rank in each branch, its language and the branches that could see it |
