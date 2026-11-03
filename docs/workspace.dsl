@@ -157,6 +157,45 @@ workspace "Theses Explorer" "Hybrid search, topic map and AI overview over the t
         explorer.evalTool -> explorer.modelServer "Embeds queries, reranks candidates" "HTTP"
         explorer.evalTool -> dspace "Searches through DSpace for the DSpace setup" "HTTPS"
         explorer.evalTool -> batch "Runs evaluations at full scale as jobs" "SSH, SLURM or PBS"
+
+        prototype = deploymentEnvironment "Prototype" {
+            serving = deploymentGroup "Serving"
+            jobs = deploymentGroup "Cluster jobs"
+
+            deploymentNode "Web browser" "The browser of a user." "" {
+                containerInstance explorer.webUi serving
+            }
+            servingNode = deploymentNode "Serving node" "Not known yet. One Linux machine, with or without a GPU." "Linux, Docker Compose" {
+                containerInstance explorer.proxy serving
+                containerInstance explorer.api serving
+                containerInstance explorer.modelServer serving
+                containerInstance explorer.database serving
+                containerInstance explorer.files serving
+                containerInstance explorer.batchTools serving
+            }
+            cluster = deploymentNode "MFF HPC cluster" "Heavy batch jobs, time limits from 12 hours to 7 days. A job brings its own model server, and its own PostgreSQL for scaling tests and full evaluations. MetaCentrum with PBS is the fallback." "SLURM" {
+                deploymentNode "GPU node" "A100, H100 or L40." "Podman or Apptainer" {
+                    containerInstance explorer.batchTools jobs
+                    containerInstance explorer.evalTool jobs
+                    containerInstance explorer.modelServer jobs
+                    containerInstance explorer.database jobs
+                }
+            }
+
+            servingNode -> cluster "Submits heavy jobs with their input, fetches their results as files" "SSH, SLURM"
+        }
+
+        development = deploymentEnvironment "Development" {
+            deploymentNode "Notebook" "The notebook of the maintainer, RTX 4050 with 6 GB. Models run inside the programs." "Docker Compose" {
+                containerInstance explorer.webUi
+                containerInstance explorer.proxy
+                containerInstance explorer.api
+                containerInstance explorer.database
+                containerInstance explorer.files
+                containerInstance explorer.batchTools
+                containerInstance explorer.evalTool
+            }
+        }
     }
 
     views {
@@ -324,6 +363,18 @@ workspace "Theses Explorer" "Hybrid search, topic map and AI overview over the t
             explorer.api.explanations -> explorer.api.llmAdapters "Generates and verifies the explanation"
             explorer.api.llmAdapters -> einfra "Calls the LLM"
             explorer.api.explanations -> explorer.database "Caches the explanation"
+            autoLayout lr
+        }
+
+        deployment explorer "Prototype" "deployment-prototype" {
+            title "Deployment: prototype"
+            include *
+            autoLayout lr
+        }
+
+        deployment explorer "Development" "deployment-development" {
+            title "Deployment: development"
+            include *
             autoLayout lr
         }
 

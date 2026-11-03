@@ -6,9 +6,10 @@ into [diagrams/](diagrams/). Choices between alternatives live in
 [design decision records](decisions/). Renaming a component here means renaming it in
 code and in the thesis text too.
 
-Chapters marked *pending* are not written yet. Their draft, in Czech, is
+The reasons behind the decisions and the open questions are in the Czech draft
 `architektura-nastrel.md` in the
-[diplomkaManagement](https://github.com/dracekmartin/diplomkaManagement) repo.
+[diplomkaManagement](https://github.com/dracekmartin/diplomkaManagement) repo. Where the
+draft and a decision record differ, the record holds.
 
 ## 1. Goals and constraints
 
@@ -723,8 +724,9 @@ drawn.
 - Setups that share steps with the same configuration and inputs run them only once.
 - At full scale the run is a cluster job
   ([0005](decisions/0005-batch-jobs-on-the-faculty-cluster.md)). A cluster job cannot
-  reach the database of the serving node, so the job needs the index builds of the set
-  inside it. How it gets them is open until the scaling test.
+  reach the database of the serving node, so it starts its own PostgreSQL and loads the
+  index builds of the set from files (section 6.1). How long that takes, the scaling test
+  shows.
 
 ### 5.5 An overview
 
@@ -754,8 +756,86 @@ drawn.
 
 ## 6. Deployment
 
-*Pending:* development notebook, batch compute, serving node, and the hardware a full
-index needs.
+The serving node is not known yet. The prototype does not have to run in operation, but it
+has to show that it could (chapter 1). Three things show it: the deployment views below
+with the hardware the whole university needs, Docker Compose that starts the system, and
+one run of the whole pipeline over the whole university as jobs on the faculty cluster or
+on MetaCentrum.
+
+### 6.1 Environments
+
+![Deployment of the prototype](diagrams/deployment-prototype.svg)
+
+![Deployment for development](diagrams/deployment-development.svg)
+
+| Environment | What runs there | How | Data |
+| --- | --- | --- | --- |
+| notebook of the maintainer | the programs for development and tests, with the models inside them, and evaluation on the corpus of an evaluation set | Docker Compose | the corpus of an evaluation set and its index builds |
+| serving node | the reverse proxy with the files of the web UI, the API, the model server, the database, file storage, the batch tools started by cron | Docker Compose ([0002](decisions/0002-containerization.md)) | the catalog, chunks, index builds, artifacts and caches |
+| MFF HPC cluster, or MetaCentrum | heavy jobs: bulk embeddings, map builds, evaluation runs at full scale, scaling tests. A job brings its own model server, and for scaling tests and full evaluations its own PostgreSQL | SLURM (PBS on MetaCentrum), the same images under Podman or Apptainer ([0005](decisions/0005-batch-jobs-on-the-faculty-cluster.md)) | chunks, vectors or index builds as files on the way in. Vectors, plugin indexes, map builds and evaluation results as files on the way out |
+
+- The cluster runs no service. Its jobs have time limits from 12 hours to 7 days and can
+  be preempted, so every job continues where it stopped.
+- A job cannot reach the database of the serving node. The batch tools there submit jobs
+  over SSH and import their results (section 4.2). A maintainer submits evaluation jobs
+  from the notebook. The two groups of the prototype view keep the instances on the
+  cluster apart from the serving node for this reason.
+- A PostgreSQL inside a job loads the index builds it needs from files, and only results
+  leave the job. A data directory is never copied.
+- Docker Compose serves development, evaluation on the notebook and the prototype.
+  Manifests for another target, such as Kubernetes, come only when the target is known.
+
+### 6.2 Deployment configuration
+
+The deployment configuration names what a deployment serves: the default setup or the
+fallback setup without the reranker, the map version the web UI shows, whether the
+overview runs, and where the models run (in process, our own model server, TEI or vLLM)
+with the revisions their adapters serve. The programs read it when they start, so
+a change takes effect with their restart. The plugins of a deployment come with its
+image, and the LLM with the configuration of the overview, of explanations and of the map
+build (chapter 8).
+
+### 6.3 Hardware for the whole university
+
+Counts come from the full harvest of experiment 04, the times from experiment 05 on the
+notebook, the model sizes from decision 0004, and the sizes of indexes are estimates from
+published figures. The evaluation and the scaling test on the cluster decide the real
+needs.
+
+| Item | Value |
+| --- | --- |
+| theses with a usable text | 157,252, with 27.6 billion characters |
+| chunks of up to 1,000, 2,000 or 4,000 characters | about 30.4, 14.6 or 7.1 million |
+| texts | about 30 GB |
+| vectors of BGE-M3 (1,024 dimensions) | 60 to 130 GB by precision, about 63 GB in half precision for 30 million chunks |
+| HNSW index over vectors in half precision | 72 to 82 GB for 31 million chunks, 18 to 21 GB for 8 million |
+| HNSW index over binary vectors, with rescoring by the full vectors | 12 to 23 GB for 31 million chunks. On 100 million vectors AWS reports a recall of 0.93 instead of 0.965 |
+| building the vector index | several hours and about 80 GB of maintenance memory for PostgreSQL |
+| models | BGE-M3 and the reranker about 2.3 GB each in full precision, about half in float16 |
+| reranker | 0.9 s per query on the GPU of the notebook against 0.1 s without it, measured on the 5,029 theses of v1 with exact search. Not measured on a CPU or at full scale |
+| two-level retrieval: first the theses by one vector each, then the chunks of the best of them | an index of about 160,000 thesis vectors, about 0.3 GB, and the vectors of about 38,000 chunks, about 78 MB, read per query. The loss of quality is not measured |
+
+What follows from the estimates:
+
+- An index of all chunks of up to 1,000 characters needs tens of GB of memory for the
+  vector index on the serving node, and about 80 GB while it is built. Larger chunks,
+  binary vectors or two-level retrieval lower this, at a cost in quality that the
+  evaluation measures.
+- The vectors of a full build come from the cluster, so the serving node needs no GPU for
+  them. It embeds new theses through the model server, on the CPU when it has no GPU, and
+  it runs the query encoder and the reranker there too. The fallback setup leaves the
+  reranker out.
+
+### 6.4 Open
+
+- Where the prototype runs and on what hardware. This waits for the supervisor.
+- The storage at full scale and the form of the vector index, after the scaling test on
+  the cluster ([0005](decisions/0005-batch-jobs-on-the-faculty-cluster.md)).
+- Whether thesis texts may stay in the storage of the cluster during jobs, a question for
+  the administrators of the cluster.
+- The cost of the reranker and of embedding new theses on a CPU.
+- How long an evaluation job at full scale takes to load the index builds of its set into
+  its own PostgreSQL (section 5.4).
 
 ## 7. Crosscutting concepts
 
@@ -942,7 +1022,7 @@ other scenarios have the measure in their row.
 | # | Source | Stimulus | Artifact | Environment | Response | Response measure |
 | --- | --- | --- | --- | --- | --- | --- |
 | S1 | maintainer | compares a new embedding model with the same chunking (Qwen3-Embedding-4B) | index spec, setup, index builds | development, the full build on the cluster | a new index spec and setup, an index build, an evaluation run | no line of code. The model gives 2,560 dimensions, more than pgvector indexes in full precision (2,000), so the dense builder has to store vectors in half precision (halfvec, up to 4,000). The storage decision still has to confirm that |
-| S2 | maintainer | tries another cross-encoder as reranker | setup, model server | development | a new setup, the model on the model server, an evaluation run | one new setup file and the deployment of the model, no line of code |
+| S2 | maintainer | tries another cross-encoder as reranker | setup | development | a new setup and an evaluation run | one new setup file, no line of code. In operation the model server also loads the model |
 | S3 | maintainer | adds a whole search: the search of DSpace | plugin `explorer_dspace` | development | a searcher class in the plugin, registered under a name, and a setup that uses it | outside the plugin only the setup, the lock file and the list of plugins of the image change. Changes of `explorer.plugin` are counted separately |
 | S4 | maintainer | adds a candidate source with its own index: learned sparse weights | plugin `explorer_sparse`, index storage | development, the full build on the cluster | a step class and an index builder in the plugin, an index build, a setup | as in S3 |
 | S5 | maintainer | compares two setups | evaluation tool | development, a frozen version of the evaluation set | `eval run` with both setups writes their TREC runs and results files and scores them | one command, shared steps run once |
