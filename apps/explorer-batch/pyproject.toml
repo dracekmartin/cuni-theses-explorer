@@ -1,0 +1,23 @@
+[project]
+name = "explorer-batch"
+version = "0.1.0"
+description = "Batch commands for cron and SLURM jobs: sync with DSpace, indexing, map building."
+requires-python = "==3.13.*"
+dependencies = ["explorer"]
+
+[project.optional-dependencies]
+local-models = ["explorer-models-local"]
+map = ["explorer-map"]
+
+[tool.uv.sources]
+explorer = { workspace = true }
+explorer-map = { workspace = true }
+explorer-models-local = { workspace = true }
+
+[build-system]
+requires = ["uv_build>=0.13.6,<0.14"]
+build-backend = "uv_build"
+
+# local-models only installs the plugin for the registry, so deptry rejects a direct import.
+[tool.deptry]
+optional_dependencies_dev_groups = ["local-models"]

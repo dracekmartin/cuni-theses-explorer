@@ -1,6 +1,8 @@
 [tool.ruff]
 target-version = "py313"
 line-length = 100
+# Without it, import sorting files the packages of the workspace under third-party libraries.
+src = ["libs/*/src", "apps/*/src"]
 
 [tool.ruff.lint]
 select = [
@@ -20,18 +22,47 @@ pythonVersion = "3.13"
 typeCheckingMode = "standard"
 venvPath = "."
 venv = ".venv"
+# The list replaces pyright's default excludes, so .venv has to be named.
 exclude = ["data", ".venv", "node_modules"]
-
 # Two quality regimes (decision 0003): experiments glue untyped libraries and raw
-# JSON together and stay on "standard"; application code is checked strictly.
-[[tool.pyright.executionEnvironments]]
-root = "apps"
-typeCheckingMode = "strict"
-
-[[tool.pyright.executionEnvironments]]
-root = "libs"
-typeCheckingMode = "strict"
+# JSON together and stay on "standard", application code is checked strictly.
+strict = ["libs", "apps"]
 
 [tool.pytest.ini_options]
-testpaths = ["experiments", "eval", "libs", "apps"]
-addopts = "-q"
+testpaths = ["experiments", "eval", "tools", "libs", "apps"]
+# importlib lets test files in different packages share a name.
+addopts = "-q --import-mode=importlib"
+
+# Packages of the application. Experiments stay outside the workspace.
+[tool.uv.workspace]
+members = ["libs/*", "apps/*"]
+
+# Layers inside explorer, following the architecture. deptry checks the dependencies between
+# packages against their pyproject.toml, tools/test_plugin_imports.py checks the plugins.
+# An exception in ignore_imports needs a comment with the reason.
+[tool.importlinter]
+root_packages = ["explorer"]
+
+[[tool.importlinter.contracts]]
+name = "Layers inside explorer"
+type = "layers"
+containers = ["explorer"]
+# A new subpackage fails the check until it is placed in a layer.
+exhaustive = true
+layers = [
+    "testing",
+    "plugin",
+    # Nothing in explorer imports the adapters, the registry finds them by name.
+    "adapters",
+    "overview | explanations | maps",
+    "search",
+    "indexes",
+    "catalog | harvest | texts | models",
+    "domain",
+]
+
+[[tool.importlinter.contracts]]
+name = "The search core does not import the harvest"
+type = "forbidden"
+source_modules = ["explorer.search"]
+forbidden_modules = ["explorer.harvest"]

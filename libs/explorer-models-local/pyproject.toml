@@ -1,0 +1,13 @@
+[project]
+name = "explorer-models-local"
+version = "0.1.0"
+description = "In-process model adapters: embeddings, reranker and BGE-M3 token weights."
+requires-python = "==3.13.*"
+dependencies = ["explorer"]
+
+[tool.uv.sources]
+explorer = { workspace = true }
+
+[build-system]
+requires = ["uv_build>=0.13.6,<0.14"]
+build-backend = "uv_build"

@@ -43,6 +43,11 @@ and ideation documents live in the sibling repo `dracekmartin/diplomkaManagement
   against it, and changes make a new version. The table of search setups in
   `experiments/README.md` holds every setup with its newest result and status, and an
   experiment that adds or reruns a setup updates it.
+- **Packages:** `libs/` and `apps/` form a uv workspace (decision 0010). Create a new
+  package only for heavy dependencies, a program of its own, or a plugin. Anything else
+  goes into a subpackage. A package imports only what its `pyproject.toml` declares,
+  plugins import only `explorer.plugin`, and a new subpackage of `explorer` needs a place
+  in the layers in the root `pyproject.toml` (decision 0011).
 
 ## Quality gates
 
@@ -52,6 +57,7 @@ Run before pushing (CI runs the same):
 ruff format --check .
 ruff check .
 pyright
+PYTHONPATH=libs/explorer/src lint-imports
 pytest
 ```
 
@@ -62,7 +68,7 @@ pytest
   not products. They are still visible in the repo, so keep them presentable.
 - `eval/` follows the experiments regime, except that its metric code has unit tests,
   because every comparison in the thesis depends on it.
-- `apps/` and `libs/` (once they exist) are the full regime: tests required, public
+- `apps/` and `libs/` are the full regime: tests required, public
   interfaces documented, modularity per the architecture doc. Anything from
   `experiments/` that proves permanent gets rewritten into `libs/` properly.
 

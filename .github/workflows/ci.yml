@@ -37,6 +37,11 @@ jobs:
       - name: Typecheck (pyright)
         run: pyright
 
+      - name: Layers inside explorer (import-linter)
+        run: lint-imports
+        env:
+          PYTHONPATH: libs/explorer/src
+
       - name: Tests (pytest)
         run: |
           set +e

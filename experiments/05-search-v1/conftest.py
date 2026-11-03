@@ -7,3 +7,5 @@ from typing import Any
 
 def pytest_pycollect_makemodule(module_path: Path, parent: Any) -> None:
     sys.modules.pop("common", None)
+    # importlib mode does not put the folder of a test file on sys.path.
+    sys.path.insert(0, str(module_path.parent))
