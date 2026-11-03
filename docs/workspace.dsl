@@ -26,6 +26,12 @@ workspace "Theses Explorer" "Hybrid search, topic map and AI overview over the t
                     pluginSteps = component "Plugin steps" "Steps from installed plugins, anywhere in the tree: candidate sources with their own index, fusions, rerankers, routers." "plugin packages" "Plugin"
                     dspaceSearcher = component "DSpace searcher" "The whole search delegated to the search of DSpace. Searchers from other plugins take the same place." "explorer_dspace" "Plugin"
                     adapters = component "Model adapters" "HTTP adapters of EmbeddingProvider, SparseEncoder and Reranker." "explorer"
+                    answerEndpoints = component "Overview and map endpoints" "REST endpoints for the overview, the explanation of a neighbor edge, the topic map of one version and the neighbors of a thesis." "FastAPI, explorer_api"
+                    overview = component "Overview" "Answers a question from the theses the search found: selects chunks, lets an LLM write an answer with citations, keeps only verified claims." "explorer"
+                    gates = component "Gates" "Small checks that let an overview through or stop it with a reason. The safety gate always runs." "explorer"
+                    explanations = component "Explanations" "Explain what two neighboring theses share, from the stored chunk pairs of their edge." "explorer"
+                    mapReader = component "Map reader" "Reads one version of the topic map and the neighbors of a thesis." "explorer"
+                    llmAdapters = component "LLM adapters" "HTTP adapters of LLMProvider and Verifier." "explorer"
                 }
                 modelServer = container "Model server" "Query embeddings, reranking and sparse weights for the API, batch tools and evaluation, on a GPU or the CPU. Our own service over the in-process adapters by default, TEI or vLLM when throughput matters." "Python, FastAPI, explorer_models_local"
             }
@@ -106,6 +112,21 @@ workspace "Theses Explorer" "Hybrid search, topic map and AI overview over the t
         explorer.api.ranking -> explorer.api.adapters "Reranks candidates"
         explorer.api.adapters -> explorer.modelServer "Calls the models" "HTTP"
         explorer.api.dspaceSearcher -> dspace "Searches DSpace" "HTTPS"
+        explorer.proxy -> explorer.api.answerEndpoints "Forwards API requests" "HTTP"
+        explorer.api.answerEndpoints -> explorer.api.overview "Asks for an overview"
+        explorer.api.answerEndpoints -> explorer.api.explanations "Asks for an explanation"
+        explorer.api.answerEndpoints -> explorer.api.mapReader "Asks for the map and neighbors"
+        explorer.api.overview -> explorer.api.wrapper "Gets the results of the same search"
+        explorer.api.overview -> explorer.api.gates "Checks before and after generation"
+        explorer.api.overview -> explorer.api.adapters "Scores chunks with the reranker"
+        explorer.api.overview -> explorer.api.llmAdapters "Generates the answer, verifies claims"
+        explorer.api.overview -> explorer.database "Caches overviews" "SQL"
+        explorer.api.explanations -> explorer.api.llmAdapters "Generates and verifies explanations"
+        explorer.api.explanations -> explorer.database "Reads chunk pairs, caches explanations" "SQL"
+        explorer.api.mapReader -> explorer.database "Reads artifacts" "SQL"
+        explorer.api.mapReader -> explorer.api.guard "Hides theses withdrawn since the map build"
+        explorer.api.explanations -> explorer.api.guard "Checks both theses first"
+        explorer.api.llmAdapters -> einfra "Calls the LLM" "HTTPS, OpenAI API"
         explorer.batchTools.commands -> explorer.batchTools.catalog "Records every run"
         explorer.batchTools.commands -> explorer.batchTools.harvester "Runs synchronization"
         explorer.batchTools.commands -> explorer.batchTools.extraction "Runs text extraction"
@@ -129,7 +150,7 @@ workspace "Theses Explorer" "Hybrid search, topic map and AI overview over the t
         explorer.batchTools.jobs -> batch "Submits jobs, fetches their results" "SSH, SLURM or PBS"
         explorer.batchTools.jobs -> explorer.files "Stores results with manifests, reads them for import" "File system"
         explorer.batchTools.jobs -> explorer.database "Imports vectors, plugin indexes and map builds" "SQL"
-        explorer.batchTools.mapBuilder -> explorer.database "Reads thesis vectors, writes artifacts" "SQL"
+        explorer.batchTools.mapBuilder -> explorer.database "Reads chunk vectors, writes artifacts" "SQL"
         explorer.batchTools.mapBuilder -> einfra "Labels the clusters of the topic map" "HTTPS, OpenAI API"
         explorer.evalTool -> explorer.database "Runs setups against the indexes" "SQL"
         explorer.evalTool -> einfra "Judges relevance" "HTTPS, OpenAI API"
@@ -183,6 +204,16 @@ workspace "Theses Explorer" "Hybrid search, topic map and AI overview over the t
             include explorer.api.endpoints explorer.api.loader explorer.api.registry explorer.api.wrapper explorer.api.safety explorer.api.guard explorer.api.pipeline explorer.api.analyzer explorer.api.sources explorer.api.ranking explorer.api.pluginSteps explorer.api.dspaceSearcher explorer.api.adapters
             exclude "explorer.api.loader -> explorer.database"
             exclude "explorer.api.wrapper -> explorer.database"
+            autoLayout lr
+        }
+
+        component explorer.api "components-overview" {
+            title "Components: overview, explanations and map in the API"
+            include explorer.proxy explorer.database explorer.modelServer einfra
+            include explorer.api.answerEndpoints explorer.api.overview explorer.api.gates explorer.api.explanations explorer.api.mapReader explorer.api.llmAdapters explorer.api.wrapper explorer.api.guard explorer.api.adapters
+            exclude "explorer.api.wrapper -> explorer.database"
+            exclude "explorer.api.wrapper -> explorer.api.guard"
+            exclude "explorer.api.guard -> explorer.database"
             autoLayout lr
         }
 

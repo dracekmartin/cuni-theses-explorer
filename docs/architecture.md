@@ -104,15 +104,16 @@ Each schema of the database has one writer:
 | `catalog` | batch tools (synchronization, text extraction, records of runs) | theses, versions, metadata, supervisors, twin groups, extracted texts, access status, runs of batch commands |
 | `chunks_<chunking>` | batch tools (chunking) | the chunks of one chunking, shared by every index build that uses it |
 | `index_<build>` | batch tools (index builds, imports, plugins through their index storage) | one schema per index build: its manifest, vectors and their index, lexical postings or the data of a plugin |
-| `artifacts` | batch tools (map builds) | neighbor graph, versions of the topic map with clusters and labels |
+| `artifacts` | batch tools (map builds) | thesis vectors, neighbor graph with the chunk pairs of its edges, versions of the topic map with clusters and labels |
 | `cache` | API | search results for a few minutes, overviews, explanations |
 
 The topic map lives only in `artifacts`. The API sends the map of one version to the
 browser as one response. A map version never changes, so browsers may cache the response
 for a long time.
 Cached overviews and explanations record the versions of the theses they cite. The API
-drops an entry when one of those theses changed or was withdrawn, both when it reads the
-entry and in a periodic cleanup, so the cache keeps a single writer.
+drops an entry when one of those theses changed, was withdrawn or lost its public text,
+both when it reads the entry and in a periodic cleanup, so the cache keeps a single
+writer.
 
 ### Code packages
 
@@ -528,8 +529,122 @@ IndexBuilder.build(changes) -> updated index build and its manifest
 
 ### 4.3 Topic map and overview
 
-*Pending:* the chain of map artifacts, explanations of neighbor edges, the overview and its
-gates, at a high level.
+This section stays at a high level. The map builder in the batch tools builds the topic
+map (section 4.2), and the API only reads it. The overview and the explanations run in
+the API on top of the search.
+
+![Components of the overview, explanations and map in the API](diagrams/components-overview.svg)
+
+The platform wrapper, the visibility guard and the model adapters are the components of
+section 4.1, and the view of that section shows their other relations.
+
+| Component | Responsibility | Package |
+| --- | --- | --- |
+| Overview and map endpoints | REST endpoints for the overview, the explanation of a neighbor edge, the topic map of one version and the neighbors of a thesis | `explorer_api` |
+| Overview | answers a question from the theses the search found: selects chunks, lets an LLM write an answer with citations and keeps only the claims the verifier confirms | `explorer` |
+| Gates | small checks that let an overview through or stop it with a reason. The safety gate always runs, the configuration of the overview names the others | `explorer` |
+| Explanations | explain what two neighboring theses share, from the stored chunk pairs of their edge. An explanation is generated on the first request and then cached | `explorer` |
+| Map reader | reads one version of the topic map and the neighbors of a thesis from `artifacts` | `explorer` |
+| LLM adapters | HTTP adapters of LLMProvider and Verifier, which call e-INFRA or a self-hosted LLM | `explorer` |
+
+#### Topic map
+
+- There is one precomputed map of the whole university. Maps of single queries may come
+  later, or never.
+- The map shows only theses with full text, and one record of each twin group. Theses
+  without public text are found by search, as in DSpace, but are not in the map.
+- The map builder works as a chain of artifacts for one snapshot: thesis vectors, the
+  neighbor graph (the k nearest theses of each thesis, computed exactly), 2D coordinates,
+  layers of clusters, their labels, and the volume of topics by year. Each map step stores
+  its output as an artifact with an id of its own and the parameters it ran with. A map
+  version is the choice of one artifact of each step, so projection, clustering and labels
+  can be replaced and compared. The deployment configuration names the map version the UI
+  shows, as it names the default setup.
+- Thesis vectors come from a thesis representation with a configuration of its own, built
+  from the chunk vectors of an index build. A change of the search setup therefore does
+  not move the map. Whether a thesis vector is the mean of its chunk vectors or the vector
+  of its abstract, experiments decide.
+- An LLM labels the clusters from sample theses and key phrases, from the smallest
+  clusters up, one call per cluster, during the map build.
+- A new snapshot gets a new map, and its layout may change. Stability between versions
+  does not matter for now.
+- For each edge of the neighbor graph the map builder stores the few most similar pairs of
+  chunks of the two theses. The chunk vectors exist already, so this is cheap.
+- The API sends the map of one version as one response (chapter 3), and the web UI draws
+  it. A map version never changes, but a thesis withdrawn after its snapshot must not
+  show. The API therefore sends with the map a short list of the theses withdrawn or
+  locked since that snapshot, which browsers keep only briefly, and the web UI hides them.
+  The neighbors of a thesis go through the visibility guard.
+- The map and the search meet only through thesis ids: the results of a search are
+  highlighted in the map, and the detail of a thesis opens its neighborhood. A record
+  outside the map that belongs to a twin group shows the neighbors of the record that
+  represents the group. Theses without public text have no neighbors, and the volume of
+  topics by year starts in 2006, because older theses have no public text.
+
+#### Explanations of neighbor edges
+
+An explanation is generated on the first request, only from the stored chunk pairs of the
+edge. The visibility guard checks both theses first, so a thesis that was withdrawn or
+locked after the map build never reaches the LLM. The verifier checks the claims against
+the chunks. The cache key is the pair of theses, the snapshot and the fingerprint of the
+configuration of explanations (thesis representation, generator, verifier, prompt). The
+cache entry records the versions of both theses, and the API drops it when one of them
+changes, is withdrawn or loses its public text (chapter 3).
+
+#### Overview
+
+- The overview gets the same query, filters and setup as the search and works with the
+  same candidates. It takes the result of the search from the short cache of the platform
+  wrapper, or computes it again, because the search is deterministic.
+- It is a request of its own, so the search returns its results without waiting for it.
+  The overview comes as a whole, and a deployment can switch it off.
+- The overview selects chunks with a limit per thesis and in total, chooses the citations
+  first, and then the LLM writes the answer with the numbers of the cited chunks. The
+  verifier checks each claim against its chunk, and claims without support drop out.
+- Gates stop the overview with a reason. The first gate runs before generation and stops
+  it when the chunks are too few or too weak. RRF gives the first candidate the same score
+  for a strong and a weak match, so the overview scores its chunks with the reranker even
+  when the search setup has none. The second gate runs after verification and stops an
+  answer with too few supported claims. The safety gate keeps the overview from
+  summarizing problematic places in theses, such as personal data. It always runs, as the
+  query safety check does, and the configuration names the other gates. Each gate gets
+  the query and the chunks or the verified answer and returns pass, or stop with a reason,
+  so a new gate needs no change elsewhere.
+- The answer is in the language of the UI, unless the query analyzer is confident that the
+  query is in another language.
+- The cache key is the normalized query, the filters, the language of the answer, the
+  fingerprint of the setup and the fingerprint of the configuration of the overview
+  (generator, verifier, prompt templates, gates and their thresholds, chunk limits, the
+  reranker it uses). There is no cache by similarity of queries, because two similar
+  queries can need different answers.
+- The generator, the verifier, the prompt templates and the whole overview method can be
+  replaced. The verifier is an LLM for now. A small NLI model, served by the model server
+  like the other models, could take its place behind the same interface.
+
+#### Open
+
+- The thresholds of the gates come with the implementation.
+- What the safety gate refuses waits for the supervisor.
+- Whether theses without public text stay findable by metadata, or are left out of search
+  as they are left out of the map, waits for the supervisor. The same answer decides
+  whether it is enough that they have no neighbors and that the chart by year starts in
+  2006.
+- Pages and colors for supervisors (UC9) can stand on the catalog and the clusters of the
+  map, once the names of supervisors are joined (section 4.2). Their scope in the UI is
+  open.
+- Which library draws the map in the browser, for example Embedding Atlas or datamapplot.
+
+#### Interfaces at the points of replacement
+
+```text
+MapStep.run(inputs, parameters) -> artifact with its id
+Explainer.explain(edge) -> verified explanation
+OverviewMethod.answer(query, filters, setup, ui_language) -> verified answer with
+    citations, or a stop with a reason
+Gate.check(query, chunks or answer) -> pass, or stop with a reason
+LLMProvider.generate(prompt) -> text
+Verifier.verify(claim, chunk) -> supported or not
+```
 
 ## 5. Runtime views
 
@@ -585,7 +700,7 @@ These are working names, the final naming is still open.
 | Step | one node of that tree: candidate source, fusion, aggregation, passage selection, reranking, filter or router |
 | Branch | the part of a step tree that feeds one input of a fusion |
 | Candidate | a chunk or a thesis passed between steps, with its score and rank in each branch, its language and the branches that could see it |
-| Fingerprint | a hash of a normalized setup and the ids of its index builds with the snapshots they cover. Every result records it |
+| Fingerprint | a hash of a normalized configuration. For a setup it includes the ids of its index builds with the snapshots they cover. Overviews and explanations have fingerprints of their own configurations. Every result records the fingerprints it depends on |
 | Search strategy | the term of the assignment and of earlier documents for how ranking sources combine. Here it is the step tree of a setup |
 | Query analyzer | turns the query text into a query with language and its confidence, lemmas and embeddings |
 | Platform wrapper | the part of the core that runs around every searcher: query safety check, query analysis, filters, visibility guard, chunks on request, trace, result cache |
@@ -603,6 +718,11 @@ These are working names, the final naming is still open.
 | Lemmatizer | turns the words of one language into their base forms, for lexical indexes and queries |
 | NeighborGraph | precomputed top-k similarity edges between theses |
 | TopicMap | precomputed, versioned 2D layout of the corpus with labeled clusters |
+| Thesis representation | the configuration that turns a thesis into one vector for the map and the neighbor graph, independent of the search setups |
+| Map step | one replaceable step of the map builder, such as projection, clustering or labels |
+| Artifact | the stored output of one map step, with its id and parameters. Chapter 9 uses the word in its other sense: the part of the system a change scenario reaches |
+| Overview method | the replaceable procedure that makes an overview from a query, filters and a setup |
+| Explainer | the replaceable procedure that makes the explanation of a neighbor edge |
 | Explanation | generated text describing what two neighboring theses share, always cached |
 | Overview | verified generated answer to a question, grounded in cited theses |
 | Gate | a small replaceable check that lets an overview through or stops it with a reason |
@@ -621,6 +741,7 @@ These are working names, the final naming is still open.
 | LLM | large language model, used for the overview, the explanations and relevance judgments |
 | MCP | Model Context Protocol, a standard way for AI assistants to call tools such as a search API |
 | MFF | the Faculty of Mathematics and Physics of Charles University |
+| NLI | natural language inference: a model decides whether one text follows from another |
 | OAI-PMH | the standard protocol through which repositories hand out their metadata page by page. xoai is the metadata format DSpace offers in it |
 | OpenAPI | a machine-readable description of a REST API. The web UI generates its API client from it |
 | PBS | the job scheduler of MetaCentrum. A job is a script with its resource needs, submitted with `qsub` |
