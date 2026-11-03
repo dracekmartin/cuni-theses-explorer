@@ -34,8 +34,8 @@ and ideation documents live in the sibling repo `dracekmartin/diplomkaManagement
   If a sentence sounds like generated boilerplate, rewrite it.
 - **Commits:** Conventional Commits, `feat|fix|docs|chore|refactor|test|ci(scope): description`.
   Enforced by a pre-commit hook; run `uv run pre-commit install` once after cloning.
-- **Naming:** domain terms are shared between code, diagrams and the thesis text
-  (Thesis, Chunk, EmbeddingProvider, SearchStrategy, TopicMap, Overview). Introduce new
+- **Naming:** domain terms are shared between code, diagrams and the thesis text (Thesis,
+  Chunk, Searcher, Setup, Step, EmbeddingProvider, TopicMap, Overview). Introduce new
   domain terms consciously and document them in `docs/architecture.md`.
 - **Evaluation:** experiments do not compute retrieval metrics themselves. Each search
   setup writes a TREC run and `eval/score.py` scores it against a version in `eval/`;
