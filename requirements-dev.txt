@@ -1,8 +1,0 @@
-# Development tooling. Runtime dependencies live next to the code that needs them
-# (experiments/NN-name/requirements.txt, later apps/).
-ruff>=0.16
-pyright>=1.1.400
-pytest>=8.3
-pre-commit>=4.0
-import-linter>=2.15
-deptry>=0.25

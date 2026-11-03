@@ -1,4 +1,5 @@
-# Run `pre-commit install --hook-type pre-commit --hook-type commit-msg` once after cloning.
+# Run `uv run pre-commit install` once after cloning. It installs both hook types below.
+default_install_hook_types: [pre-commit, commit-msg]
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.16.6

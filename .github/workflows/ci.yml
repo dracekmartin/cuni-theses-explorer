@@ -11,41 +11,56 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-          cache: pip
+      - uses: astral-sh/setup-uv@v10.3.3
 
-      - name: Install dev tooling
-        run: pip install -r requirements-dev.txt
-
-      - name: Install experiment and evaluation dependencies (for typechecking)
-        run: |
-          pip install torch --index-url https://download.pytorch.org/whl/cpu
-          for requirements in experiments/*/requirements.txt eval/requirements.txt; do
-            if [ -f "$requirements" ]; then
-              pip install -r "$requirements"
-            fi
-          done
+      - name: Install the workspace, the tools and the experiment dependencies
+        run: uv sync --all-packages --locked
 
       - name: Format check (ruff)
-        run: ruff format --check .
+        run: uv run --no-sync ruff format --check .
 
       - name: Lint (ruff)
-        run: ruff check .
+        run: uv run --no-sync ruff check .
 
       - name: Typecheck (pyright)
-        run: pyright
+        run: uv run --no-sync pyright
 
       - name: Layers inside explorer (import-linter)
-        run: lint-imports
-        env:
-          PYTHONPATH: libs/explorer/src
+        run: uv run --no-sync lint-imports
 
       - name: Tests (pytest)
         run: |
           set +e
-          pytest
+          uv run --no-sync pytest
+          code=$?
+          if [ "$code" -eq 5 ]; then
+            echo "No tests collected yet."
+            exit 0
+          fi
+          exit $code
+
+  core-without-torch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v10.3.3
+
+      - name: Install explorer alone, with the tools only
+        run: uv sync --package explorer --no-default-groups --group dev --locked
+
+      - name: No torch in the environment
+        run: uv run --no-sync python -c "import importlib.util, sys; sys.exit(importlib.util.find_spec('torch') is not None)"
+
+      - name: Every module of explorer imports
+        run: >-
+          uv run --no-sync python -c "import importlib, pkgutil, explorer;
+          [importlib.import_module(m.name) for m in pkgutil.walk_packages(explorer.__path__, 'explorer.')]"
+
+      - name: Tests of explorer
+        run: |
+          set +e
+          uv run --no-sync pytest libs/explorer
           code=$?
           if [ "$code" -eq 5 ]; then
             echo "No tests collected yet."

@@ -37,7 +37,8 @@ subpackage cannot slip past the checks.
   subpackage fails the check until it is placed in a layer. One more contract forbids the
   search core to import the harvest, which sits below it.
 - An exception in a contract (`ignore_imports`) needs a comment with the reason.
-- CI installs `explorer` alone, without torch, and runs its tests.
+- CI installs `explorer` alone, without torch, imports each of its modules and runs its
+  tests.
 - The checks run at both gates of decision 0003, at commit time and in CI.
 
 ## Consequences
@@ -52,11 +53,10 @@ subpackage cannot slip past the checks.
 - deptry finds the import name of a package of the workspace by the naming rule of
   decision 0010.
 - The tests of a plugin live outside `src/` and are not checked.
-- For now only import-linter runs in CI. Pre-commit, deptry in CI and the CI job without
-  torch come with the switch to uv, which installs the packages. deptry also reports the
-  empty packages of the skeleton as not using `explorer` (DEP002) until they contain code.
-- The plugin test needs the packages installed to build its graph. Until a package
-  registers as a plugin, it has nothing to check.
+- deptry joins CI once the packages of the skeleton contain code. Until then it reports
+  them as not using `explorer` (DEP002). deptry, import-linter and the plugin test are
+  not yet in `.pre-commit-config.yaml`, so at commit time none of them runs.
+- Until a package registers as a plugin, the plugin test has nothing to check.
 
 ## Alternatives considered
 

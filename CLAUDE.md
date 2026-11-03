@@ -33,7 +33,7 @@ and ideation documents live in the sibling repo `dracekmartin/diplomkaManagement
   No em dashes anywhere; restructure the sentence or use a comma, colon, or parentheses.
   If a sentence sounds like generated boilerplate, rewrite it.
 - **Commits:** Conventional Commits, `feat|fix|docs|chore|refactor|test|ci(scope): description`.
-  Enforced by a pre-commit hook; run `pre-commit install` once after cloning.
+  Enforced by a pre-commit hook; run `uv run pre-commit install` once after cloning.
 - **Naming:** domain terms are shared between code, diagrams and the thesis text
   (Thesis, Chunk, EmbeddingProvider, SearchStrategy, TopicMap, Overview). Introduce new
   domain terms consciously and document them in `docs/architecture.md`.
@@ -48,17 +48,23 @@ and ideation documents live in the sibling repo `dracekmartin/diplomkaManagement
   goes into a subpackage. A package imports only what its `pyproject.toml` declares,
   plugins import only `explorer.plugin`, and a new subpackage of `explorer` needs a place
   in the layers in the root `pyproject.toml` (decision 0011).
+- **Dependencies:** never install with pip, `uv sync` removes everything that is not in
+  `uv.lock`. Run `uv sync` from the repository root: in a package folder it keeps only
+  that package and removes the rest from `.venv`. Add a library to a package with `uv add --package <package>`. Tools and
+  libraries of the experiments go into `--group dev` or `--group experiments` with an
+  exact version (`name==1.2.3`).
 
 ## Quality gates
 
-Run before pushing (CI runs the same):
+`uv sync` installs the workspace, the tools and the experiment dependencies. Run before
+pushing (CI runs the same):
 
 ```sh
-ruff format --check .
-ruff check .
-pyright
-PYTHONPATH=libs/explorer/src lint-imports
-pytest
+uv run ruff format --check .
+uv run ruff check .
+uv run pyright
+uv run lint-imports
+uv run pytest
 ```
 
 ## Quality boundary

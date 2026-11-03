@@ -28,11 +28,23 @@ The architecture decides which components get a package of their own
 - The import name is the package name with `_` instead of `-`: `explorer-map` is imported
   as `explorer_map`.
 - Python is pinned to 3.13 (`requires-python = "==3.13.*"`).
-- torch comes in two extras of the package with the in-process model adapters, `cpu` and
-  `cu126`, which exclude each other. Both are in the lock. The notebook's driver (560.94)
-  supports at most CUDA 12.6.
-- Development tools move into dependency groups (PEP 735) in the root `pyproject.toml`,
-  and `requirements-dev.txt` goes away.
+- Each package has a `py.typed` file, so pyright in strict mode uses its types when
+  another package imports it.
+- The development tools and the dependencies of `experiments/` and `eval/` are two
+  dependency groups (PEP 735) in the root `pyproject.toml`, `dev` and `experiments`.
+  `uv sync` installs both by default. The groups pin exact versions, so an upgrade is
+  a deliberate change. The `experiments` group holds the versions that produced the
+  reported results.
+- The package with the in-process model adapters will offer torch in two extras, `cpu`
+  and `cu126`, which exclude each other, and the lock will hold both. The notebook's
+  driver (560.94) supports at most CUDA 12.6. Until that package has code, torch comes
+  only through the `experiments` group: the CUDA 12.6 build on Windows, the CPU build on
+  Linux. The source of torch in the root `pyproject.toml` depends only on the platform,
+  so the extras will need sources of their own and a declared conflict with the
+  `experiments` group.
+- The lock covers Windows and Linux only.
+- The uv version is pinned by `required-version` in the root `pyproject.toml`. CI installs
+  the same version.
 
 ## Consequences
 
@@ -45,10 +57,9 @@ The architecture decides which components get a package of their own
   0003). Pytest imports test files in importlib mode, so two packages can both have
   a `tests/test_config.py`. In this mode pytest does not put the folder of a test on
   `sys.path`, so the conftests of the experiments do it.
-- uv is not yet installed on the development machine. Until it is, the skeleton has no
-  `uv.lock` and the tools still come from `requirements-dev.txt`. Pyright cannot resolve
-  an import of another package of the workspace before uv installs the packages, so the
-  switch to uv has to come before the first code that imports another package.
+- The lock holds one version of each library for the whole repository (torch has one
+  build per platform). The pinned versions of the experiments therefore also bind the
+  packages of the application, until someone upgrades them.
 - OpenAI announced in March 2026 that it is buying Astral, the company behind uv. The lock
   can be exported to the standard `pylock.toml` (PEP 751), so moving away from uv stays
   possible.

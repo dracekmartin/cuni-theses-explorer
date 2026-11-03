@@ -33,9 +33,58 @@ testpaths = ["experiments", "eval", "tools", "libs", "apps"]
 # importlib lets test files in different packages share a name.
 addopts = "-q --import-mode=importlib"
 
-# Packages of the application. Experiments stay outside the workspace.
+# Packages of the application. Experiments stay outside the workspace, their dependencies
+# are a group of their own.
 [tool.uv.workspace]
 members = ["libs/*", "apps/*"]
+
+[tool.uv]
+# The same minor version as the build backend uv_build, CI's setup-uv reads it too.
+required-version = ">=0.13.7,<0.14"
+# The lock covers the notebook and Linux (CI, the faculty cluster).
+environments = ["sys_platform == 'win32'", "sys_platform == 'linux'"]
+default-groups = ["dev", "experiments"]
+
+[tool.uv.sources]
+# The notebook's driver (560.94) supports at most CUDA 12.6, CI has no GPU.
+torch = [
+    { index = "pytorch-cu126", marker = "sys_platform == 'win32'" },
+    { index = "pytorch-cpu", marker = "sys_platform == 'linux'" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+# Groups pin exact versions. A tool upgrade or a new library version is a deliberate change.
+[dependency-groups]
+dev = [
+    "deptry==0.25.1",
+    "import-linter==2.15",
+    "pre-commit==4.6.2",
+    "pyright==1.1.411",
+    "pytest==9.1.1",
+    "ruff==0.16.6",
+]
+# The environment that produced the reported results of the experiments.
+experiments = [
+    "numpy==2.5.3",
+    "openai==3.19.2",
+    "pypdf==6.18.0",
+    "rank-bm25==0.2.2",
+    "requests==2.34.2",
+    "scipy==1.18.1",
+    "sentence-transformers==6.0.1",
+    "simplemma==2.0.0",
+    "torch==2.6.0",
+    "transformers==5.16.1",
+]
 
 # Layers inside explorer, following the architecture. deptry checks the dependencies between
 # packages against their pyproject.toml, tools/test_plugin_imports.py checks the plugins.
