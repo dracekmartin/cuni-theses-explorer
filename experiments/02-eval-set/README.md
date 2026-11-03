@@ -2,11 +2,11 @@
 
 Which fixed corpus, queries and relevance judgments let us compare search setups with each
 other and with the current DSpace search? The experiment builds the versions of the set in
-[eval/](../../eval/README.md): the pilot `v0` and `v1`.
+[eval/](../../eval/README.md): the pilot `v0`, `v1` and `v2`.
 
-v0 done 2026-09-24, v1 done 2026-10-13, the human check of layer 2 postponed. Corpus: 592
-theses (v0), 5,029 (v1). Builds on: experiments 01 and 04. LLM: `gpt-oss-120b` on
-e-INFRA CZ.
+v0 done 2026-09-24, v1 done 2026-10-13, the human check of layer 2 postponed, v2 in
+preparation. Corpus: 592 theses (v0), 5,029 (v1), 4,790 (v2). Builds on: experiments 01
+and 04. LLM: `gpt-oss-120b` on e-INFRA CZ.
 
 | Query type | Queries | Written from | Tests |
 | --- | --- | --- | --- |
@@ -80,10 +80,24 @@ The human check is postponed until these weaknesses of v1 are settled:
 - Experiment 05 chose the number of summed chunks on the same topics, which need a set of
   their own for such choices.
 
+Version v2 has a dev part to choose settings on and a test part to measure them, because
+experiment 05 chose the number of summed chunks on the topics and known-item queries it
+reported. The dev part takes all 1,478 known-item queries and the 25 topics of v1. The
+corpus is that of v1 without 233 theses that have no abstract in the metadata or in the
+text, and without 6 records for which another record of the same thesis stands: a master's
+or doctoral thesis that a rigorous thesis grew from, and a failed attempt at a defence
+(`groups.py`). DSpace cuts half of the abstracts after about 1,300 characters.
+`abstracts.py` completes 3,231 of them from the thesis text and takes 1,237 missing ones
+from under their heading in the text. Some faculties put the abstract at the end of the
+thesis. The other 682 cut abstracts are worded differently in the text and stay cut. The
+script also removes HTML entities, title pages and keywords that DSpace copied into an
+abstract.
+
 Reproduce v0: `build_pilot_corpus.py`, `generate_queries.py` and `topics.py add`, then the
 setups of experiment 03, then `topics.py judge` (needs `EINFRA_API_KEY` in `.env`). The
 blind sample of v0, `data/eval-v0/validation.md`, came from the judge step of that time
 and stays as it is. For v1
 the same scripts run with `EVAL_VERSION=v1`, `build_v1_corpus.py` in place of the first,
 and the setups of experiment 05, then `topics.py sample` and, with the saved grades,
-`topics.py agreement --grades validation-grades.json`.
+`topics.py agreement --grades validation-grades.json`. For v2, so far: `abstracts.py`,
+`groups.py` and `build_v2_corpus.py` with `EVAL_VERSION=v2`.

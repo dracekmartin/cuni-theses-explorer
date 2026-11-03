@@ -7,7 +7,7 @@ answered before code goes into `apps/` or `libs/`. Every README follows
 | Experiment | Question | Status |
 | --- | --- | --- |
 | [01-mini-pipeline](01-mini-pipeline/README.md) | Does a first end-to-end pipeline work on real DSpace data, and how do lexical and semantic search behave on it? | done, 2026-09-09 |
-| [02-eval-set](02-eval-set/README.md) | Which fixed corpus, queries and relevance judgments let us compare search setups with each other and with the current DSpace search? | v0 and v1 built, human check of layer 2 postponed |
+| [02-eval-set](02-eval-set/README.md) | Which fixed corpus, queries and relevance judgments let us compare search setups with each other and with the current DSpace search? | v0 and v1 built, v2 in preparation: corpus and dev part |
 | [03-search-setups](03-search-setups/README.md) | Which embedding model and which extra steps (a metadata chunk, reranking) improve on the setup of experiment 01? | done, 2026-09-24 |
 | [04-full-harvest](04-full-harvest/README.md) | Can the metadata and body texts of all theses be harvested in one unattended run, and how many theses have a usable text? | done, 2026-10-12 |
 | [05-search-v1](05-search-v1/README.md) | Do the findings of experiment 03 hold on 5,000 theses of the whole university, how does the search of DSpace compare, and which further steps help? | done, 2026-10-13 |

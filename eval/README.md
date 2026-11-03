@@ -19,7 +19,30 @@ stay in `data/`, which is not versioned.
 | Version | State | Contents |
 | --- | --- | --- |
 | v0 | pilot, frozen (reported 2026-09-25) | 592 theses: 25 departments of 6 faculties (drawn from the first 1,000 items of each faculty in API order), the theses of experiment 01 and one showcase thesis; 586 known-item queries (layer 1) written by gpt-oss-120b for 80 of them; 6 topics (layer 2) with 276 pooled theses graded by gpt-oss-120b, human check pending |
-| v1 | in preparation | 5,029 theses: all of v0 and 4,437 of 120 departments drawn from all 17 faculties of the full harvest (experiment 04); 1,478 known-item queries (layer 1) for 200 targets, those of v0 included; 25 topics (layer 2) with relevance described in plain Czech, 1,172 pooled pairs of topic and thesis graded by gpt-oss-120b on 2026-10-13, human check postponed until the weaknesses listed in experiment 02 are settled |
+| v1 | frozen (reported 2026-10-13) | 5,029 theses: all of v0 and 4,437 of 120 departments drawn from all 17 faculties of the full harvest (experiment 04); 1,478 known-item queries (layer 1) for 200 targets, those of v0 included; 25 topics (layer 2) with relevance described in plain Czech, 1,172 pooled pairs of topic and thesis graded by gpt-oss-120b on 2026-10-13, human check postponed until the weaknesses listed in experiment 02 are settled |
+| v2 | in preparation | 4,790 theses of v1 that have an abstract, without twin records of one thesis (see below), abstracts completed from the thesis text. Part `dev`: the 1,478 known-item queries and the 25 topics of v1, the topics not judged yet. Part `test`: new targets and topics, to come |
+
+### Parts of v2
+
+- v2 has two parts, `eval/v2/dev/` and `eval/v2/test/`, each with the files below and
+  the same `corpus.txt`. A part is scored like a version: `--version v2/dev`.
+- Settings of a search setup are chosen on `dev` only. `test` measures the chosen setups.
+- `dev` stays open. Before the topic score of a new setup on `dev` counts, the theses of
+  its top 10 without a judgment get one from the same LLM and prompt. `compare.py` scores
+  all runs against the same qrels at once, so a comparison holds.
+- `test` is judged for the setups chosen on `dev` and the baselines, then frozen. A later
+  setup reports judged@10 with its score.
+- `groups.txt` lists records of one thesis (a rigorous thesis and the thesis it grew from,
+  attempts at one defence): a member and its representative per line. The corpus holds
+  only representatives. A run over a larger index writes a member as its representative
+  and leaves out a repeated one.
+- The texts are those of v1, so embeddings of their chunks stay valid. Units built from
+  metadata need new embeddings, since `data/eval-v2/corpus.jsonl` has completed abstracts
+  (the field `abstract_source` tells where each came from).
+- Known-item queries of a new type `exact` (a name, code, abbreviation or number of a law),
+  queries without a language (`lang: null`) and Slovak versions next to the Czech and
+  English ones come with the test part. `score.py` counts them correctly only after a change,
+  and no result on v2 is reported before it.
 
 ## Files of a version
 

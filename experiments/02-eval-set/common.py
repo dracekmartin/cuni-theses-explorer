@@ -49,6 +49,8 @@ class Thesis:
     defence_status: str | None = None
     text_link: str | None = None
     source: str = "catalog"
+    # From v2 on: where each abstract came from (metadata, metadata+text, text).
+    abstract_source: dict[str, str] = field(default_factory=dict)
 
     @property
     def stem(self) -> str:
