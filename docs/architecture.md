@@ -131,7 +131,7 @@ the repository and how the workspace is set up is decided in the engineering rec
 | `explorer_batch` | the batch tools | `explorer`, and `explorer_models_local` and `explorer_map` only as optional extras |
 | `explorer_eval` | the evaluation tool | `explorer`, and `explorer_models_local` only as an optional extra |
 | `explorer_dspace` | plugin: the whole search delegated to the search of DSpace | `explorer` |
-| `explorer_sparse` | plugin: learned sparse weights of BGE-M3 as a candidate source with its own index | `explorer` |
+| `explorer_sparse` | plugin: a candidate source over learned sparse token weights from any SparseEncoder, with its own index | `explorer` |
 
 The core never imports torch. Programs reach the in-process adapters and the plugins only
 through the registry. The registry finds them by Python entry points, a standard way for
@@ -143,8 +143,240 @@ an API client generated from the OpenAPI specification.
 
 ## 4. Components
 
-*Pending:* search core in detail (searcher interface, step tree, platform wrapper, setups
-and registry, language handling), indexing, topic map and overview at a high level.
+### 4.1 Search core
+
+The search core is part of the library `explorer`. The API runs it, and so does the
+evaluation tool, which calls the platform wrapper directly instead of the search
+endpoints. The evaluation therefore measures the same code that serves users.
+
+![Components of the search in the API](diagrams/components-search.svg)
+
+Dashed boxes are plugins: separate packages that announce themselves to the registry, and
+the core does not depend on them. The box Plugin steps stands for the steps of all
+installed plugins, and the first of them is the sparse source in `explorer_sparse`. The
+DSpace searcher is drawn as itself, because the assignment asks for a comparison with the
+search of DSpace. To stay readable, the view leaves out two arrows to the database. The
+setup loader reads the index manifests when the API starts, and the platform wrapper reads
+and writes its result cache in the schema `cache`.
+
+| Component | Responsibility | Package |
+| --- | --- | --- |
+| Search endpoints | REST endpoints for search and for the chunks that show why a thesis was found. Behind a login for maintainers also the list of setups, the choice of a setup and the trace. Everyone else gets the default setup | `explorer_api` |
+| Setup loader | reads the setup files when the API starts, checks them against the registry and the index manifests, and builds one searcher per setup. It refuses a setup whose index build is missing or whose query encoder does not match the index manifest | `explorer` |
+| Registry | names of searchers, steps and model adapters, each with a version. It finds plugins by entry points | `explorer` |
+| Platform wrapper | runs around every searcher: the query safety check, the query analysis, filters the searcher lacks, the visibility guard, chunks on request, the trace and a result cache for a few minutes | `explorer` |
+| Query safety check | stops or limits a query that looks for problematic places in theses, such as personal data. It is a set of small checks chosen by configuration | `explorer` |
+| Visibility guard | drops theses the catalog does not list as public now, chunks of older versions of a thesis, and body chunks of a thesis whose text is no longer public | `explorer` |
+| PipelineSearcher | the default searcher. It runs the step tree of a setup | `explorer` |
+| Query analyzer | turns the query text and the language of the UI into a query: its language with a confidence or no language, lemmas, embeddings. It computes only the embeddings the setup needs | `explorer` |
+| Candidate sources | leaf steps: dense vectors, a lexical index or metadata chunks of one index build, or another searcher | `explorer` |
+| Ranking steps | fusion, aggregation, passage selection, reranking, filters and routers | `explorer` |
+| Plugin steps | steps from installed plugins, anywhere in the tree: candidate sources with their own index, fusions, rerankers, routers. The first one is the sparse source, a candidate source over learned sparse token weights from any SparseEncoder | plugin packages, first `explorer_sparse` |
+| DSpace searcher | plugin: the whole search delegated to the search of DSpace. Searchers from other plugins take the same place | `explorer_dspace` |
+| Model adapters | HTTP adapters of EmbeddingProvider, SparseEncoder and Reranker, which call the model server | `explorer` |
+
+#### Searcher and platform wrapper
+
+Parts are replaced on two levels. A whole search sits behind one interface, the searcher.
+The default searcher is built from steps, and each step can be replaced too.
+
+The searcher gets an analyzed query, filters and a limit on the number of results. It
+returns ranked theses, each with its id, version and score, optionally with the chunks
+behind the match, and a trace. The API, the evaluation tool, the overview and the
+explanations call nothing else. A searcher has to return ranked theses, everything else
+is optional. It reports its capabilities (filters, chunks, languages, the index it
+needs).
+
+The platform wrapper runs the query safety check and the query analyzer once, then calls
+the searcher. It also adds what the searcher lacks:
+
+- Filters: the wrapper asks a searcher without filters for more results and drops the
+  ones that do not match.
+- Visibility: an index can be older than the catalog, so the visibility guard checks every
+  result against the current state of the catalog. It drops theses that are no longer
+  public, chunks of older versions, and body chunks of a thesis whose text DSpace locked
+  or put under embargo after indexing.
+- Chunks: the result list carries no text of chunks. When a user asks why a thesis was
+  found, the wrapper runs passage selection for that thesis, which picks its chunks
+  nearest to the query. This works for searchers that return no chunks, such as DSpace,
+  too.
+- Trace: what each step returned and how long it took. The wrapper records it for
+  maintainers and in evaluation runs.
+
+Only maintainers may choose a setup other than the default one or ask for a trace. These
+parameters sit behind a login, together with the other protection of the API
+(section 7).
+
+The query safety check runs before every searcher, and a setup cannot switch it off. The
+main protection against collecting problematic content is in the overview, which would
+otherwise put such content together into one answer (section 4.3).
+
+A searcher with its own index has to remove a thesis from that index too, so that
+a withdrawn thesis disappears everywhere. A new model that does the whole search, such as
+another search engine or a model with its own index, is one searcher class in a plugin,
+optionally with an index builder, registered under a name. The API, the web UI and the
+evaluation tool stay unchanged.
+
+#### Step tree
+
+PipelineSearcher composes a search from steps, and every step gets the analyzed query.
+A step takes ranked lists of candidates and returns one. A branch is the part of the tree
+that feeds one input of a fusion, often a single candidate source. A candidate is a chunk
+or a thesis with its score and rank in each branch, its language and the branches that
+could see it. All steps take and return the same kind of list, so
+a step fits anywhere in the tree. A whole other searcher can be a leaf, and its results
+can then be fused with others or reranked.
+
+| Step | Input | Output | Variants |
+| --- | --- | --- | --- |
+| candidate source | query | chunks or theses | dense vectors, lexical search (BM25) over lemmas, metadata chunks only, learned sparse weights (plugin), another searcher |
+| fusion | several lists | one list | weighted RRF, weighted sum of normalized scores |
+| aggregation | chunks | theses | best chunk, sum or mean of the n best chunks |
+| passage selection | theses | theses with chunks | chunks of each thesis nearest to the query |
+| reranking | list | rescored list | cross-encoder, later an LLM |
+| filter | list | shorter list | faculty, year, type of thesis, language, supervisor |
+| router | query and several branches | output of one branch | by type or language of the query |
+
+Each step has its own depth, because the results depend on it. A candidate source
+returns that many candidates. A reranker rescores that many from the top and keeps the
+rest in their order, as in experiment 05. Weights and normalization belong to the fusion,
+separately for each input. An aggregation states what it computes: the sum and the mean
+of the n best chunks rank theses with fewer than n chunks differently.
+
+The setup with the best score on known items in experiment 05, `bge-m3-meta-rerank`, as
+a tree. Both sources search body chunks and metadata chunks. Leaves search, and every
+inner node works on the output of its children:
+
+```text
+aggregation: best chunk
+└─ reranking: bge-reranker-v2-m3, rescores the top 50
+   └─ fusion: RRF, k = 60
+      ├─ dense: bge-m3, depth 200, weight 1
+      └─ lexical: lemmas cs and en, depth 200, weight 1
+```
+
+The same reranker can rerank the results of DSpace. It reads text, so passage selection
+adds the chunks of each thesis inside the tree:
+
+```text
+reranking: bge-reranker-v2-m3, rescores the top 50
+└─ passage selection: 2 nearest chunks per thesis
+   └─ dspace: the search of DSpace
+```
+
+#### Setups and registry
+
+A setup is a named configuration of a searcher, for PipelineSearcher its step tree. Each
+setup is one TOML file in the repository. The tree is a flat list of named steps, and
+each step names the steps it reads:
+
+```toml
+name = "bge-m3-meta-rerank"
+output = "theses"
+
+[steps.dense]
+type = "source.dense.v1"
+index = "chunks-1000.bge-m3"
+depth = 200
+
+[steps.lexical]
+type = "source.bm25.v1"
+index = "chunks-1000.lemmas-cs-en"
+depth = 200
+
+[steps.fused]
+type = "fuse.rrf.v1"
+inputs = { dense = 1.0, lexical = 1.0 }
+k = 60
+
+[steps.reranked]
+type = "rerank.cross-encoder.v1"
+input = "fused"
+model = "BAAI/bge-reranker-v2-m3"
+rescore = 50
+
+[steps.theses]
+type = "aggregate.best.v1"
+input = "reranked"
+```
+
+- An index spec lies in a file of its own: chunking, model, revision, prompt. A new setup
+  costs nothing, a new index spec needs a new index build.
+- `setups check` checks a setup: an unknown key or step type, a reference to a missing
+  step, an index without a finished build, a query encoder that does not match the index
+  manifest. It prints the setup with its defaults filled in and its fingerprint. An
+  unknown key is an error, so that a result never claims a setting the code did not use.
+- `eval run` runs a setup over an evaluation set and writes a TREC run with the
+  fingerprint.
+- The fingerprint is a hash of the normalized setup and the ids of its index builds. TREC
+  runs and the caches of results, overviews and explanations record it.
+- A setup with a reported result is never edited. A change makes a new file, as with
+  versions of the evaluation set.
+- Setups change only in the repository, the UI has no editor for them. The default setup
+  is one line of the deployment configuration and changes with a restart of the API.
+  A fallback setup without the reranker serves a node without a GPU.
+
+The registry maps names with a version, such as `fuse.rrf.v1`, to searchers, steps and
+model adapters. The core registers its own. A plugin announces its classes through an
+entry point. Setups refer to names, never to import paths, so adding a plugin changes
+nothing in the core. A plugin may add any kind of step. The sparse source is a leaf
+because it brings candidates from its own index, and a plugin can as well add a fusion,
+a reranker or a router inside the tree.
+
+#### Language
+
+Each chunk gets a language at indexing, detected from its own text. A Czech thesis
+carries its English abstract in its text, and the abstract of a Slovak thesis lies in the
+Czech slot of the metadata, so the language of the thesis would be wrong for many chunks.
+The thesis keeps the language of its metadata for filters and display. Czech, Slovak and
+English are full languages in the analysis of chunks and queries, each with its own
+lemmatizer.
+
+The query analyzer picks Czech, Slovak or English with a confidence, or decides that the
+query has no language: a name, a code, an abbreviation or a formula. No language is
+a valid result, not an error. For such a query the lexical source searches chunks in all
+languages, because exact matches of names and codes help most there. The overview uses
+the confidence to choose the language of its answer. Whether the language of the UI helps
+as a guess for short queries is up to the evaluation.
+
+A lexical source matches words, so it rarely finds a chunk in another language than the
+query. For a query with a language, the fusion therefore treats a lexical source as blind
+to chunks in other languages, and it knows for each candidate which branches could see
+it. For a branch that searched and did not find a candidate, the fusion counts zero or
+a score just below the last hit of that branch. A branch that could not see a candidate
+counts the same way, or is left out of the score of that candidate. The plain sum of
+experiment 05 favors theses in the language of the query. An average over the branches
+that could see a candidate fixes that for queries in another language. It also lowers the
+score of a thesis in the language of the query that only the dense source found.
+
+The core is designed for every way of handling the lexical branch: the fusion rule above,
+lexical search over metadata chunks only, the reranker alone, no lexical branch at all,
+and translation of the query as an optional step. Translation is the only one that needs
+extra work, and it may wait. The evaluation decides the default, together with the
+default fusion, the size of chunks and the place of the reranker.
+
+#### Interfaces at the points of replacement
+
+```text
+Searcher.search(query, filters, limit) -> result
+Searcher.capabilities -> filters, chunks, languages, required index
+QueryAnalyzer.analyze(text, ui_language) -> query: language with confidence or none,
+    lemmas, embeddings
+Step.run(query, inputs) -> candidates
+EmbeddingProvider.embed_queries(texts), EmbeddingProvider.embed_chunks(texts)
+SparseEncoder.encode(texts) -> token weights
+Reranker.score(query, texts) -> scores
+```
+
+### 4.2 Indexing
+
+*Pending:* harvest and catalog, text extraction, chunking, index builders and their
+imports.
+
+### 4.3 Topic map and overview
+
+*Pending:* the chain of map artifacts, explanations of neighbor edges, the overview and its
+gates, at a high level.
 
 ## 5. Runtime views
 
@@ -158,8 +390,9 @@ index needs.
 
 ## 7. Crosscutting concepts
 
-*Pending:* plugins and registry, index manifests and snapshots, visibility guard, query
-safety check, protection against overload, language handling.
+*Pending:* what the search core (4.1) shares with indexing, the map and the overview:
+plugins and registry, index manifests and snapshots, visibility guard, query safety check,
+access for maintainers and protection against overload, language handling.
 
 ## 8. Variability
 
@@ -193,11 +426,19 @@ These are working names, the final naming is still open.
 | Thesis | one thesis record in DSpace: metadata, files, extracted text, document version |
 | Catalog | the system's record of all theses: versions, metadata, files, extracted texts and access status |
 | Chunk | a searchable piece of a thesis: a passage of the body, or a metadata chunk with the title, keywords and abstract in one language, as in the experiments. Text unit is the working name for this general notion |
-| Searcher | the interface of a whole search: query, filters and k in, ranked theses out |
+| Searcher | the interface of a whole search: query, filters and a limit in, ranked theses out |
+| PipelineSearcher | the default searcher, which runs the step tree of a setup |
 | Setup | a named configuration of a searcher. For the default searcher it is a tree of steps |
 | Step | one node of that tree: candidate source, fusion, aggregation, passage selection, reranking, filter or router |
+| Branch | the part of a step tree that feeds one input of a fusion |
+| Candidate | a chunk or a thesis passed between steps, with its score and rank in each branch, its language and the branches that could see it |
+| Fingerprint | a hash of a normalized setup and the ids of its index builds. Every result records it |
 | Search strategy | the term of the assignment and of earlier documents for how ranking sources combine. Here it is the step tree of a setup |
-| Query analyzer | turns the query text into a query with language, lemmas and embeddings |
+| Query analyzer | turns the query text into a query with language and its confidence, lemmas and embeddings |
+| Platform wrapper | the part of the core that runs around every searcher: query safety check, query analysis, filters, visibility guard, chunks on request, trace, result cache |
+| Query safety check | small checks before every searcher that stop or limit a query looking for problematic places in theses |
+| Visibility guard | drops from every result what is not public now: withdrawn theses, chunks of older versions, body chunks of theses whose text was locked |
+| Trace | the record of what each step returned and how long it took |
 | Index spec, index build | what an index is built from (a chunking, an encoder or analyzer) and one built instance, recorded with an index manifest (model, revision, snapshot, counts) |
 | Registry | the list of named searchers, steps, model adapters and plugins that a setup can refer to |
 | Plugin | a separate package that adds a searcher, a step or an index to the registry without changes to the core |
@@ -216,6 +457,7 @@ These are working names, the final naming is still open.
 | Abbreviation | Meaning |
 | --- | --- |
 | BGE-M3 | the multilingual embedding model of BAAI that the experiments found best. It gives one dense vector per passage and also weights of its tokens |
+| BM25 | the usual ranking formula of lexical search. It scores a chunk by the query words it contains, weighted by how rare each word is in the corpus |
 | C4 | a way of drawing software architecture in four levels of zoom: context, containers, components and code |
 | CLI | a program run from the command line |
 | HNSW | the graph index that pgvector uses to find the nearest vectors without comparing a query with every vector |
@@ -227,8 +469,10 @@ These are working names, the final naming is still open.
 | OpenAPI | a machine-readable description of a REST API. The web UI generates its API client from it |
 | PBS | the job scheduler of MetaCentrum. A job is a script with its resource needs, submitted with `qsub` |
 | pgvector | the PostgreSQL extension for vectors and nearest-neighbor search |
+| RRF | reciprocal rank fusion. Each list gives a candidate 1/(k + rank), where k is a constant, usually 60, and the fusion adds these up |
 | SLURM | the job scheduler of the MFF cluster, the same role as PBS. Jobs are submitted with `sbatch` |
 | TEI, vLLM | servers from other projects that run models behind an HTTP API: Text Embeddings Inference from Hugging Face for embeddings and rerankers, vLLM mainly for LLMs. Either can replace our own model server |
+| TOML | a plain text format for configuration files |
 | TREC | Text REtrieval Conference, a long series of evaluation campaigns for search. Its formats are used here: a TREC run lists the ranked results of each query, qrels hold the relevance judgments |
 | UC | a use case from [use-cases.md](use-cases.md), for example UC1 |
 | uv | the Python tool that manages the packages and dependencies of the workspace |
