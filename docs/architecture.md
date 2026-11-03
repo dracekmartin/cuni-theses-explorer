@@ -482,8 +482,9 @@ Every builder keeps the same contract:
   the index.
 - It can run again without harm, and after a crash or a preempted job it continues where
   it stopped.
-- Cached embeddings are keyed by a hash of the text, the chunking, the model and its
-  revision. A changed text or chunking never reuses old vectors.
+- Cached embeddings are keyed by a hash of the text, the chunking and the encoder (model,
+  revision, prompt, dimension). A changed text, chunking or encoder never reuses old
+  vectors.
 - The manifest records the snapshot the build covers. The setup loader in the API reads
   the manifests again every few minutes, so an update of a build changes the fingerprint
   of every setup that uses it without a restart, and a cached result never outlives the
@@ -574,9 +575,10 @@ section 4.1, and the view of that section shows their other relations.
   chunks of the two theses. The chunk vectors exist already, so this is cheap.
 - The API sends the map of one version as one response (chapter 3), and the web UI draws
   it. A map version never changes, but a thesis withdrawn after its snapshot must not
-  show. The API therefore sends with the map a short list of the theses withdrawn or
-  locked since that snapshot, which browsers keep only briefly, and the web UI hides them.
-  The neighbors of a thesis go through the visibility guard.
+  show. Next to the map, the API therefore sends as a small response of its own the list
+  of theses withdrawn or locked since that snapshot. Browsers keep this list only briefly,
+  and the web UI hides those theses. The neighbors of a thesis go through the visibility
+  guard.
 - The map and the search meet only through thesis ids: the results of a search are
   highlighted in the map, and the detail of a thesis opens its neighborhood. A record
   outside the map that belongs to a twin group shows the neighbors of the record that
@@ -757,9 +759,121 @@ index needs.
 
 ## 7. Crosscutting concepts
 
-*Pending:* what the search core (4.1) shares with indexing, the map and the overview:
-plugins and registry, index manifests and snapshots, visibility guard, query safety check,
-access for maintainers and protection against overload, language handling.
+Concepts that more than one part of chapter 4 relies on. Each section collects the rules
+in one place and points to where the parts apply them.
+
+### 7.1 Plugins and registry
+
+- The registry maps names with a version, such as `fuse.rrf.v1`, to searchers, steps,
+  model adapters and the other replaceable parts of the core. Configuration refers to
+  these names, never to import paths (section 4.1).
+- A plugin is a package of its own that announces its classes through an entry point. It
+  imports only the public module `explorer.plugin`, and `explorer.testing` in its tests.
+  Decision [0011](decisions/0011-direction-of-dependencies.md) checks the imports of its
+  code, not of its tests.
+- Which plugins a program has depends on its installation: the development environment
+  installs all of them, a deployment image lists the ones its setups need (chapter 3).
+- A plugin can bring a whole searcher, a step anywhere in the tree, or an index builder
+  with its own index storage. The core does not change when a plugin is
+  added (decision [0006](decisions/0006-search-core-with-replaceable-searchers.md)).
+
+### 7.2 Versions, snapshots and fingerprints
+
+Every result names what it came from, so that it can be repeated and so that a cache
+never serves a result whose sources changed.
+
+| Term | What it pins | Where it is recorded |
+| --- | --- | --- |
+| version of a thesis | the metadata and files of a record as the harvester saw them | the catalog, every chunk and index entry (section 4.2) |
+| snapshot | the state of the catalog after one synchronization run | the catalog, the manifests of index builds, map versions |
+| manifest of an index build | the index spec, the model and its revision, the snapshot the build covers, counts, where and when it was built | the schema `index_<build>` |
+| fingerprint | a setup with its index builds and their snapshots, or the configuration of the overview or of explanations | the results files of TREC runs, the keys of the caches of results, overviews and explanations |
+| version of the evaluation set | the corpus, the queries and the judgments | `eval/`, frozen once a result was reported against it. `eval/README.md` names the parts that stay open, such as the dev part of v2 |
+
+The setup loader reads the manifests again every few minutes, so an update of an index
+build changes the fingerprints of its setups without a restart of the API (section 4.2).
+
+### 7.3 Caches
+
+| Cache | Key | Leaves the cache when |
+| --- | --- | --- |
+| results of a search, a few minutes in the schema `cache` | the normalized query, the language of the UI, the filters, the limit, the fingerprint of the setup | the time runs out. The visibility guard checks every hit |
+| overviews, in `cache` | the normalized query, the filters, the language of the answer, the fingerprint of the setup and of the configuration of the overview | a cited thesis changes, is withdrawn or loses its public text |
+| explanations, in `cache` | the pair of theses, the snapshot, the fingerprint of the configuration of explanations | one of the two theses changes, is withdrawn or loses its public text |
+| embeddings of queries, in the API | the text of the query and the encoder: model, revision, prompt, dimension | the key changes with the encoder, so nothing has to be dropped |
+| embeddings of chunks, in the batch tools | a hash of the text, the chunking and the encoder: model, revision, prompt, dimension | a changed text, chunking or encoder gets a new key |
+| the topic map, in browsers over HTTP | the map version | whenever the browser drops it. A map version does not change, so it may stay for a long time. The list of hidden theses is a response of its own that browsers keep only briefly |
+
+The API is the only writer of the schema `cache`. It drops overviews and explanations both
+when it reads them and in a periodic cleanup (chapter 3).
+
+### 7.4 Visibility
+
+What DSpace does not publish, the system neither finds nor shows (goal 3 in chapter 1).
+Several parts carry this rule:
+
+- The catalog keeps the access status of every version and reads it again in each periodic
+  full run (section 4.2).
+- The visibility guard checks every result against the current catalog, cached results
+  included. It drops theses the catalog does not list as public now, chunks of older
+  versions and body chunks of theses whose text DSpace locked or put under embargo after
+  indexing (section 4.1).
+- Next to the map, the API sends a list of theses withdrawn or locked since its snapshot,
+  which the web UI hides, and the neighbors of a thesis pass the visibility guard (section 4.3).
+- Explanations check both theses before generation. Overviews use only the results of the
+  search, which already passed the guard (sections 4.3 and 5.5).
+- Cached overviews and explanations leave the cache when a cited thesis changes, is
+  withdrawn or loses its public text (section 7.3).
+- The chunker deletes the chunks of versions that are gone, and each builder its entries
+  (section 4.2). How fast, and whether backups follow, waits for the supervisor.
+
+### 7.5 Query safety and protection of content
+
+- The query safety check runs before every searcher, for the web UI and the API alike, and
+  a setup cannot switch it off. It stops or limits a query that looks for problematic
+  places in theses, such as personal data (section 4.1).
+- The safety gate of the overview checks the chunks before they reach the LLM and the
+  answer after verification, and it cannot be switched off either (section 4.3).
+- Lexical search over metadata chunks only is a variant that keeps lexical search away
+  from personal data in full text (decision [0007](decisions/0007-language-handling.md)).
+- The API returns chunks, not PDFs. Paging has a limit, and there is no bulk export.
+- What the checks refuse waits for the supervisor.
+
+### 7.6 Access and protection against overload
+
+The API is designed as public, for the web UI, scripts and later AI assistants through
+MCP. Every query costs computation: the embedding of the query, the reranker, and for an
+overview calls of an LLM. The key of e-INFRA has an unofficial limit of 4 parallel
+requests.
+
+- The reverse proxy limits requests per IP address, the size of a request and the length
+  of a query.
+- The API has its own limits for expensive endpoints (overview, explanations), a cap on
+  parallel work on the GPU, a queue for calls of the LLM sized by the limit of the
+  provider, and timeouts.
+- The caches of section 7.3 lower the load.
+- An optional API key allows a larger volume. The endpoints for maintainers and operators
+  (the list and the choice of setups, the trace, the maintainer pages, the state of
+  synchronization) sit behind a login.
+- The version of the API is in its path (`/v1`), and an OpenAPI specification describes
+  it, so that a change does not break clients.
+- Logs of queries keep only the text of the query, the time and the setup, without the IP
+  address and for a limited time. The same holds for the access log of the reverse proxy:
+  it never keeps the text of a query next to an IP address. The scope waits for the
+  supervisor.
+
+### 7.7 Languages
+
+- Each chunk gets its language from its own text. The thesis keeps the language of its
+  metadata for filters and display (section 4.2).
+- Czech, Slovak and English are full languages. The lexical index builder and the query
+  analyzer share one lemmatizer per language (sections 4.1 and 4.2).
+- The query analyzer returns a language with a confidence, or no language. The fusion knows
+  which branches could see a candidate, and the overview answers in the language of the UI
+  unless the query is clearly in another one (sections 4.1 and 4.3,
+  decision [0007](decisions/0007-language-handling.md)).
+- The texts of the web UI can be replaced easily, Czech and English first. A Slovak UI is
+  a later detail.
 
 ## 8. Variability
 
