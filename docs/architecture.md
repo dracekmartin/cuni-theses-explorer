@@ -164,7 +164,7 @@ the platform wrapper reads and writes its result cache in the schema `cache`.
 | --- | --- | --- |
 | Search endpoints | REST endpoints for search and for the chunks that show why a thesis was found. Behind a login for maintainers also the list of setups, the choice of a setup and the trace. Everyone else gets the default setup | `explorer_api` |
 | Setup loader | reads the setup files when the API starts, checks them against the registry and the index manifests, and builds one searcher per setup. It refuses a setup whose index build is missing or whose query encoder does not match the index manifest. It reads the manifests again every few minutes | `explorer` |
-| Registry | names of searchers, steps and model adapters, each with a version. It finds plugins by entry points | `explorer` |
+| Registry | names of searchers, steps, model adapters and the other replaceable parts of the core, each with a version. It finds plugins by entry points | `explorer` |
 | Platform wrapper | runs around every searcher: the query safety check, the query analysis, filters the searcher lacks, the visibility guard, chunks on request, the trace and a result cache for a few minutes | `explorer` |
 | Query safety check | stops or limits a query that looks for problematic places in theses, such as personal data. It is a set of small checks chosen by configuration | `explorer` |
 | Visibility guard | drops theses the catalog does not list as public now, chunks of older versions of a thesis, and body chunks of a thesis whose text is no longer public | `explorer` |
@@ -308,8 +308,9 @@ input = "reranked"
   index without a finished build, a query encoder that does not match the index manifest.
   It prints the setup with its defaults filled in and its fingerprint. An unknown key is
   an error, so that a result never claims a setting the code did not use.
-- `eval run` runs a setup over an evaluation set and writes a TREC run, with a results
-  file next to it that holds the fingerprint.
+- `eval run` runs one or more setups over a version of an evaluation set, writes a TREC
+  run with a results file that holds the fingerprint for each of them, and scores them
+  with `eval/score.py`.
 - The fingerprint is a hash of the normalized setup and the ids of its index builds, each
   with the snapshot it covers. The results files of TREC runs and the caches of results
   and overviews record it.
@@ -762,13 +763,79 @@ access for maintainers and protection against overload, language handling.
 
 ## 8. Variability
 
-*Pending:* what can be replaced, through which interface, at which time (configuration,
-deployment, code) and at what cost.
+Each point of variation has an interface, its variants and a time when the choice is
+bound:
+
+- configuration: a file of the repository, such as a setup, an index spec, a chunking, or
+  the configuration of the overview, of explanations or of a map build. `setups check`
+  checks setups,
+- deployment: the deployment configuration and the plugins installed in an image,
+- code: a new class, in a plugin or in the core, that the registry knows under a name.
+
+No variant is implemented yet. The table lists the variants of the first implementation,
+and "later" marks those that the design only allows. The last column names the tactic of
+modifiability that keeps a change in one place: encapsulation (the variants hide behind
+one interface), restricted dependencies (plugins import only `explorer.plugin`, checked as
+decision [0011](decisions/0011-direction-of-dependencies.md) says) and deferred binding
+(configuration chooses a variant by its name, the code does not).
+
+| Point of variation | Interface | Variants | Bound at | Cost of a new variant | Tactic |
+| --- | --- | --- | --- | --- | --- |
+| whole search | Searcher | PipelineSearcher, DSpace searcher, later another engine or a model with its own index | code, then configuration | one searcher class in a plugin, optionally an index builder, and a setup | encapsulation, restricted dependencies, deferred binding |
+| candidate source | Step | dense vectors, lexical (BM25) over lemmas, metadata chunks only, learned sparse weights (plugin), another searcher | configuration, a new kind in code | a step class and an index builder, in a plugin for a source with its own index, then an index build and a setup | encapsulation, restricted dependencies, deferred binding |
+| other steps | Step | fusion (weighted RRF, weighted sum of normalized scores, how a missed and a blind branch count), aggregation (best chunk, sum or mean of the n best chunks), passage selection, filter, router | configuration, a new method in code | one step class and a setup | encapsulation, deferred binding |
+| weights, depths, chunks per thesis | setup | any value | configuration | a new setup file, no new index build | deferred binding |
+| query analysis | QueryAnalyzer | Czech, Slovak or English with a confidence, or no language, later translation of the query as a step | configuration, a new language in code | a lemmatizer and a change of the analyzer for a new language | encapsulation |
+| lemmatizer | Lemmatizer | simplemma for Czech, Slovak and English, UDPipe as an optional variant | configuration, a new lemmatizer in code | new lexical index builds, and a class for a lemmatizer that is not there yet | encapsulation, deferred binding |
+| embedding model | EmbeddingProvider, index spec | BGE-M3, Qwen3-Embedding-4B | configuration | an index spec, a setup, the model on the model server and a new index build, a cluster job at full scale | encapsulation, deferred binding |
+| reranker | Reranker | cross-encoders such as bge-reranker-v2-m3, later an LLM | configuration, an LLM reranker in code | a setup and the model on the model server. An LLM reranker needs a step class or a Reranker adapter over LLMProvider | encapsulation, deferred binding |
+| where models run | model adapters | in process, our own model server, later TEI or vLLM | deployment | the deployment configuration, new adapters only for a server with other endpoints | encapsulation |
+| chunking | chunking | chunks of up to 1,000 characters, larger ones to compare | configuration | new chunks and new index builds over them | deferred binding |
+| text of a thesis | Extractor | the text file of DSpace, own extraction from the PDF, later OCR | code | an extractor class, then new chunks and index builds for the theses it covers | encapsulation |
+| query safety check | small checks | the checks chosen by configuration, while the check itself cannot be switched off | configuration, a new check in code | a check class | encapsulation, deferred binding |
+| LLM | LLMProvider | e-INFRA, a self-hosted LLM | configuration | the configuration of the overview, of explanations or of the map build | encapsulation, deferred binding |
+| verifier | Verifier | an LLM, later a small NLI model | configuration, an NLI model in code and deployment | for an NLI model a Verifier adapter and the model on the model server | encapsulation |
+| overview and explanations | OverviewMethod, Gate, Explainer | the default method with citations, the gates of section 4.3, the default explainer | configuration, a new method, gate or explainer in code | a class and the configuration of the overview or of explanations | encapsulation, deferred binding |
+| topic map | MapStep, thesis representation | projection, clustering and labels, thesis vectors as the mean of chunk vectors or as the vector of the abstract | configuration of the map build, a new step in code in `explorer_map` | a map step class and a new map build | encapsulation, deferred binding |
+| what a deployment serves | deployment configuration | the default setup or the fallback setup without the reranker, the map version, the overview on or off | deployment | one line and a restart of the API | deferred binding |
+| batch compute | Cluster jobs | the MFF cluster with SLURM, MetaCentrum with PBS | deployment | job scripts for the other scheduler | encapsulation |
+
+The public web UI knows only the default setup and offers no choice of variants (goal 2
+in chapter 1). Maintainers choose setups through the CLI, and behind a login through the
+API and the maintainer pages of the web UI. Every other variant is chosen in
+a configuration file or in the deployment.
 
 ## 9. Quality scenarios
 
-*Pending:* change scenarios in six parts (source, stimulus, artifact, environment,
-response, response measure), carried out and measured in the thesis.
+The quality goals of chapter 1 and the scenarios that check them:
+
+| Goal | Scenarios |
+| --- | --- |
+| 1. Replaceable and comparable parts | S1 to S5, S7 |
+| 2. Simple for users | S1 to S4, S7, in which the public UI stays unchanged |
+| 3. Faithful to the source | S6 |
+| 4. Reproducible | S5, S8 |
+| 5. Fast and affordable | S9, and the hardware a full index needs (chapter 6) |
+| 6. Operable by one person | none yet. Synchronization and index updates run without a maintainer (UC10), and their measure comes with the deployment |
+
+Each scenario has six parts: who or what causes it (source), what happens (stimulus),
+which part of the system it reaches (artifact), in which situation (environment), what
+the system does (response) and how the response is measured (response measure). In
+every change scenario (S1 to S4 and S7) the API, the web UI and the evaluation tool stay
+unchanged. The thesis carries these out and counts the files and lines they change. The
+other scenarios have the measure in their row.
+
+| # | Source | Stimulus | Artifact | Environment | Response | Response measure |
+| --- | --- | --- | --- | --- | --- | --- |
+| S1 | maintainer | compares a new embedding model with the same chunking (Qwen3-Embedding-4B) | index spec, setup, index builds | development, the full build on the cluster | a new index spec and setup, an index build, an evaluation run | no line of code. The model gives 2,560 dimensions, more than pgvector indexes in full precision (2,000), so the dense builder has to store vectors in half precision (halfvec, up to 4,000). The storage decision still has to confirm that |
+| S2 | maintainer | tries another cross-encoder as reranker | setup, model server | development | a new setup, the model on the model server, an evaluation run | one new setup file and the deployment of the model, no line of code |
+| S3 | maintainer | adds a whole search: the search of DSpace | plugin `explorer_dspace` | development | a searcher class in the plugin, registered under a name, and a setup that uses it | outside the plugin only the setup, the lock file and the list of plugins of the image change. Changes of `explorer.plugin` are counted separately |
+| S4 | maintainer | adds a candidate source with its own index: learned sparse weights | plugin `explorer_sparse`, index storage | development, the full build on the cluster | a step class and an index builder in the plugin, an index build, a setup | as in S3 |
+| S5 | maintainer | compares two setups | evaluation tool | development, a frozen version of the evaluation set | `eval run` with both setups writes their TREC runs and results files and scores them | one command, shared steps run once |
+| S6 | DSpace | withdraws a thesis, corrects it or locks its text | catalog, index builds, caches, topic map | operation | a withdrawn thesis is no longer found or shown: search, overview, explanations, map, neighbors. A corrected thesis shows only in its new version. A locked text is no longer found or quoted, the thesis stays findable by its metadata and leaves the map | hidden within X hours after the change in DSpace, deleted within Y, and backups included or not. X, Y and the backups wait for the supervisor (section 4.2) |
+| S7 | maintainer | switches the overview to another LLM | configuration of the overview | development or operation | the overview uses the new model, cached overviews of the old configuration are no longer served | no line of code, the fingerprint of the overview changes |
+| S8 | reviewer of the thesis | repeats a reported result | setup, index builds of the version, evaluation set | the same frozen version, the same index builds, the same adapters on the same kind of hardware | the same TREC run | identical rankings for setups whose models are self-hosted and pinned, apart from ties that another float precision can reorder. A setup with a model from e-INFRA records the model and the date, and a result that must repeat uses a self-hosted pinned model instead (decision 0004) |
+| S9 | user | sends a query | API with the default setup | operation on the serving node under normal load | the ranked theses | the results within a few seconds (UC1) for 95 % of the queries of the evaluation set. The limit and the load come with the hardware of the serving node |
 
 ## 10. Decisions
 
@@ -809,7 +876,7 @@ These are working names, the final naming is still open.
 | Visibility guard | drops from every result what is not public now: withdrawn theses, chunks of older versions, body chunks of theses whose text was locked |
 | Trace | the record of what each step returned and how long it took |
 | Index spec, index build | what an index is built from (a chunking, an encoder or analyzer) and one built instance, recorded with an index manifest (model, revision, snapshot, counts) |
-| Registry | the list of named searchers, steps, model adapters and plugins that a setup can refer to |
+| Registry | the list of named searchers, steps, model adapters, the other replaceable parts of the core and plugins that a configuration can refer to |
 | Plugin | a separate package that adds a searcher, a step or an index to the registry without changes to the core |
 | Index storage | the schema `index_<build>` in PostgreSQL that the core gives a plugin for its own index |
 | Snapshot | the state of the catalog after one synchronization run |
