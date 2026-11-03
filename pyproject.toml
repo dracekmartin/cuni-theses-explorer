@@ -37,18 +37,26 @@ select = [
     "FAST",  # FastAPI misuse
     "ASYNC", # asyncio misuse
     "ANN401", # Any in a function signature
+    "D",     # docstrings of modules, classes and public functions
+    "FIX",   # TODO, FIXME, XXX and HACK comments
 ]
+# The class docstring covers __init__, and magic methods need none.
+ignore = ["D105", "D107"]
 # Czech text uses en dashes in ranges and no-break spaces, RUF001 would report both.
 allowed-confusables = ["–", "\u00a0"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
 "{experiments,eval}/**" = [
     "RUF", "C4", "PIE", "PERF", "DTZ", "PT", "ARG", "A", "BLE", "PLE", "PLW", "PGH", "ERA",
-    "T20", "S", "FBT", "INP", "NPY", "FAST", "ASYNC", "ANN401",
+    "T20", "S", "FBT", "INP", "NPY", "FAST", "ASYNC", "ANN401", "D", "FIX",
 ]
-# Tests use plain assert. Test folders and tools/ are not packages.
-"**/tests/**" = ["S101", "INP001"]
-"tools/**" = ["S101", "INP001"]
+# Tests use plain assert and describe themselves by their names. Test folders and tools/
+# are not packages.
+"**/tests/**" = ["S101", "INP001", "D"]
+"tools/**" = ["S101", "INP001", "D"]
 
 [tool.basedpyright]
 pythonVersion = "3.13"
