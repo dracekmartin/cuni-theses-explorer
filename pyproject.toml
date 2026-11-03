@@ -6,16 +6,48 @@ src = ["libs/*/src", "apps/*/src"]
 
 [tool.ruff.lint]
 select = [
-    "E",   # pycodestyle errors
-    "W",   # pycodestyle warnings
-    "F",   # pyflakes
-    "I",   # isort (import ordering)
-    "N",   # pep8-naming
-    "UP",  # pyupgrade (modern syntax)
-    "B",   # bugbear (likely bugs)
-    "SIM", # simplify
-    "PTH", # prefer pathlib
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # pyflakes
+    "I",     # isort (import ordering)
+    "N",     # pep8-naming
+    "UP",    # pyupgrade (modern syntax)
+    "B",     # bugbear (likely bugs)
+    "SIM",   # simplify
+    "PTH",   # prefer pathlib
+    # Everything except experiments/ and eval/, which skip these (per-file-ignores below).
+    "RUF",   # ruff's own checks
+    "C4",    # comprehensions
+    "PIE",   # unnecessary statements
+    "PERF",  # slow loop patterns
+    "DTZ",   # dates and times without a time zone
+    "PT",    # pytest style
+    "ARG",   # unused arguments
+    "A",     # names that hide builtins such as id, type or list
+    "BLE",   # catching every exception
+    "PLE",   # pylint errors
+    "PLW",   # pylint warnings
+    "PGH",   # ignore comments without a rule code
+    "ERA",   # commented-out code
+    "T20",   # print instead of logging
+    "S",     # security
+    "FBT",   # boolean positional arguments
+    "INP",   # a folder of modules without __init__.py
+    "NPY",   # deprecated numpy calls
+    "FAST",  # FastAPI misuse
+    "ASYNC", # asyncio misuse
 ]
+# Czech text uses en dashes in ranges and no-break spaces, RUF001 would report both.
+allowed-confusables = ["–", " "]
+
+[tool.ruff.lint.per-file-ignores]
+"{experiments,eval}/**" = [
+    "RUF", "C4", "PIE", "PERF", "DTZ", "PT", "ARG", "A", "BLE", "PLE", "PLW", "PGH", "ERA",
+    "T20", "S", "FBT", "INP", "NPY", "FAST", "ASYNC",
+]
+# Tests use plain assert. Test folders and tools/ are not packages.
+"**/tests/**" = ["S101", "INP001"]
+"tools/**" = ["S101", "INP001"]
 
 [tool.pyright]
 pythonVersion = "3.13"
