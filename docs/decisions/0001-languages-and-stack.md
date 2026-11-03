@@ -1,6 +1,8 @@
 # 0001: Languages and stack
 
-Date: 2026-09-09. Status: accepted.
+Date: 2026-09-09. Status: accepted. The points that ML libraries are called directly from
+application code and that there is no separate ML service are superseded by
+[0004](0004-models-at-query-time.md).
 
 ## Context
 

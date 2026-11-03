@@ -1,6 +1,7 @@
 # 0002: Containerization
 
-Date: 2026-09-09. Status: accepted.
+Date: 2026-09-09. Status: accepted. The point that all batch steps run as compose commands
+is superseded by [0005](0005-batch-jobs-on-the-faculty-cluster.md).
 
 ## Context
 
