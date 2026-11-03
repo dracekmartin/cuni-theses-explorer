@@ -39,7 +39,7 @@ harvest and a public interface for plugins, and each of these has mistakes of it
   0003. That decision says test code follows the same rules as the rest. The exceptions
   above for `assert` and `__init__.py` are the only differences.
 - Rules for docstrings, type annotations, exceptions and logging come with the decisions
-  on those topics.
+  on those topics. Decision 0013 adds the single rule `ANN401`.
 
 ## Consequences
 

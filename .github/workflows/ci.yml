@@ -22,8 +22,8 @@ jobs:
       - name: Lint (ruff)
         run: uv run --no-sync ruff check .
 
-      - name: Typecheck (pyright)
-        run: uv run --no-sync pyright
+      - name: Typecheck (basedpyright)
+        run: uv run --no-sync basedpyright
 
       - name: Layers inside explorer (import-linter)
         run: uv run --no-sync lint-imports

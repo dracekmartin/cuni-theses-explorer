@@ -36,29 +36,34 @@ select = [
     "NPY",   # deprecated numpy calls
     "FAST",  # FastAPI misuse
     "ASYNC", # asyncio misuse
+    "ANN401", # Any in a function signature
 ]
 # Czech text uses en dashes in ranges and no-break spaces, RUF001 would report both.
-allowed-confusables = ["–", " "]
+allowed-confusables = ["–", "\u00a0"]
 
 [tool.ruff.lint.per-file-ignores]
 "{experiments,eval}/**" = [
     "RUF", "C4", "PIE", "PERF", "DTZ", "PT", "ARG", "A", "BLE", "PLE", "PLW", "PGH", "ERA",
-    "T20", "S", "FBT", "INP", "NPY", "FAST", "ASYNC",
+    "T20", "S", "FBT", "INP", "NPY", "FAST", "ASYNC", "ANN401",
 ]
 # Tests use plain assert. Test folders and tools/ are not packages.
 "**/tests/**" = ["S101", "INP001"]
 "tools/**" = ["S101", "INP001"]
 
-[tool.pyright]
+[tool.basedpyright]
 pythonVersion = "3.13"
 typeCheckingMode = "standard"
 venvPath = "."
 venv = ".venv"
-# The list replaces pyright's default excludes, so .venv has to be named.
+# The list replaces the default excludes, so .venv has to be named.
 exclude = ["data", ".venv", "node_modules"]
 # Two quality regimes (decision 0003): experiments glue untyped libraries and raw
 # JSON together and stay on "standard", application code is checked strictly.
 strict = ["libs", "apps"]
+# An ignore comment names its rule, and one that suppresses nothing is an error, so stale
+# exceptions do not pile up.
+reportIgnoreCommentWithoutRule = "error"
+reportUnnecessaryTypeIgnoreComment = "error"
 
 [tool.pytest.ini_options]
 testpaths = ["experiments", "eval", "tools", "libs", "apps"]
@@ -100,7 +105,7 @@ dev = [
     "deptry==0.25.1",
     "import-linter==2.15",
     "pre-commit==4.6.2",
-    "pyright==1.1.411",
+    "basedpyright==1.40.2",
     "pytest==9.1.1",
     "ruff==0.16.6",
 ]
@@ -112,6 +117,7 @@ experiments = [
     "rank-bm25==0.2.2",
     "requests==2.34.2",
     "scipy==1.18.1",
+    "scipy-stubs==1.18.1.1",
     "sentence-transformers==6.0.1",
     "simplemma==2.0.0",
     "torch==2.6.0",

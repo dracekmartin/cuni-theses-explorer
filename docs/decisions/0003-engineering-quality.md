@@ -1,6 +1,7 @@
 # 0003: Engineering quality and its enforcement
 
-Date: 2026-09-09. Status: accepted.
+Date: 2026-09-09. Status: accepted. Decision 0013 replaces pyright with its fork
+basedpyright, with the same modes.
 
 ## Context
 

@@ -50,9 +50,14 @@ and ideation documents live in the sibling repo `dracekmartin/diplomkaManagement
   in the layers in the root `pyproject.toml` (decision 0011).
 - **Dependencies:** never install with pip, `uv sync` removes everything that is not in
   `uv.lock`. Run `uv sync` from the repository root: in a package folder it keeps only
-  that package and removes the rest from `.venv`. Add a library to a package with `uv add --package <package>`. Tools and
-  libraries of the experiments go into `--group dev` or `--group experiments` with an
-  exact version (`name==1.2.3`).
+  that package and removes the rest from `.venv`. Add a library to a package with
+  `uv add --package <package>`. Tools and libraries of the experiments go into
+  `--group dev` or `--group experiments` with an exact version (`name==1.2.3`).
+- **Untyped libraries in `libs/` and `apps/`:** import them only in `explorer-models-local`
+  or `explorer-map`. In this order: install their official stubs, or write a stub in
+  `typings/` when several modules use the library, or as the last resort keep the calls
+  in one module that turns off the unknown-type reports at its top with a reason. Its
+  public functions take and return typed values (decision 0013).
 
 ## Quality gates
 
@@ -62,7 +67,7 @@ pushing (CI runs the same):
 ```sh
 uv run ruff format --check .
 uv run ruff check .
-uv run pyright
+uv run basedpyright
 uv run lint-imports
 uv run pytest
 ```

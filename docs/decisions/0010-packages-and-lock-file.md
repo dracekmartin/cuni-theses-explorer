@@ -28,8 +28,8 @@ The architecture decides which components get a package of their own
 - The import name is the package name with `_` instead of `-`: `explorer-map` is imported
   as `explorer_map`.
 - Python is pinned to 3.13 (`requires-python = "==3.13.*"`).
-- Each package has a `py.typed` file, so pyright in strict mode uses its types when
-  another package imports it.
+- Each package has a `py.typed` file, so the type checker in strict mode uses its types
+  when another package imports it.
 - The development tools and the dependencies of `experiments/` and `eval/` are two
   dependency groups (PEP 735) in the root `pyproject.toml`, `dev` and `experiments`.
   `uv sync` installs both by default. The groups pin exact versions, so an upgrade is
@@ -53,8 +53,8 @@ The architecture decides which components get a package of their own
   job without torch.
 - All packages share one environment, so a package can import a package it does not
   declare and still work locally. Decision 0011 closes this gap.
-- Pyright checks `libs/` and `apps/` strictly through its `strict` setting (decision
-  0003). Pytest imports test files in importlib mode, so two packages can both have
+- The type checker checks `libs/` and `apps/` strictly through its `strict` setting
+  (decisions 0003 and 0013). Pytest imports test files in importlib mode, so two packages can both have
   a `tests/test_config.py`. In this mode pytest does not put the folder of a test on
   `sys.path`, so the conftests of the experiments do it.
 - The lock holds one version of each library for the whole repository (torch has one
