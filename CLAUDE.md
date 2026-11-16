@@ -63,6 +63,22 @@ and ideation documents live in the sibling repo `dracekmartin/diplomkaManagement
   and the type do not say enough. A comment is one line and says why. A leading
   underscore marks what is internal to its package, and other packages do not import it
   (decision 0012).
+- **Synchronous code:** no `async def` in `libs/` and `apps/`, except the lifespan and
+  middleware of the API. Parallel work runs only in thread pools that one object owns,
+  such as the searcher. Only boundary modules (database, HTTP, files) do input and output,
+  and every timeout lives there (decision 0015).
+- **Errors:** for a failure that a caller reacts to, raise a subclass of `ExplorerError`
+  from `explorer.domain`. Programming errors stay `TypeError` or `ValueError`. A boundary
+  module converts the exceptions of its library with `raise ... from err`, and only
+  boundary modules retry (decision 0014).
+- **Configuration:** every TOML file has a pydantic model, all from one base class with
+  `extra="forbid"` and `frozen=True`. Secrets come only from `EXPLORER_*` environment
+  variables as `SecretStr`, and an unknown `EXPLORER_*` variable is an error (decision
+  0016).
+- **Commands:** one typer command per program. Exit codes 0, 1, 2, 75 (run again later)
+  and 78 (configuration). A batch command saves and records each unit of work whole, and
+  after SIGTERM or Ctrl+C it finishes the units in progress and exits with 75 (decision
+  0016).
 
 ## Quality gates
 
