@@ -121,6 +121,21 @@ topic, for example rehabilitation after a knee injury next to physiotherapy for 
 pain, so the two parts share a few judged theses. A search for the words of each topic in
 titles, keywords and abstracts found at least three theses that are likely relevant.
 
+The dev topics are judged again, because their abstracts changed. The pool takes the top 10
+of the 16 runs of experiment 05, read as runs of v2: a record of a group counts as its
+representative, and a thesis outside the corpus drops out before the cut, so the next one
+moves up. That gives 1,154 pairs (v1: 1,172). The judge sees abstracts up to 4,000
+characters (v1: 1,500), which cuts 1 % of the abstracts of v2 instead of 30 %, and
+answers at temperature 0 (v1: 0.3). It graded 664 pairs as not relevant, 322 as partially
+relevant and 168 as relevant. Of the 1,120 pairs judged in both versions, 89 % keep their
+grade, and the most common change raises 0 to 1 (63 pairs). Four topics have no relevant
+thesis. Neural machine translation and pressure ulcers had none in v1 either. The only
+relevant thesis of v1 on the protection of an employee at dismissal has no abstract and
+left the corpus. The only one on the New Testament parables, whose abstract the judge of v1
+saw whole, got grade 1 when it was judged again. A blind sample of 150 pairs, 50 for each LLM grade, waits for a person
+to grade on the page `data/eval-v2/validation-dev.html`. `topics.py agreement` then also
+prints the agreement reweighted to the share of each grade in the pool.
+
 Reproduce v0: `build_pilot_corpus.py`, `generate_queries.py` and `topics.py add`, then the
 setups of experiment 03, then `topics.py judge` (needs `EINFRA_API_KEY` in `.env`). The
 blind sample of v0, `data/eval-v0/validation.md`, came from the judge step of that time
@@ -128,5 +143,7 @@ and stays as it is. For v1
 the same scripts run with `EVAL_VERSION=v1`, `build_v1_corpus.py` in place of the first,
 and the setups of experiment 05, then `topics.py sample` and, with the saved grades,
 `topics.py agreement --grades validation-grades.json`. For v2, so far: `abstracts.py`,
-`groups.py`, `build_v2_corpus.py`, `generate_v2_queries.py` and `topics.py add` with
-`EVAL_VERSION=v2`.
+`groups.py`, `build_v2_corpus.py`, `generate_v2_queries.py`, `topics.py add`,
+`topics.py judge --part dev` and `topics.py sample --part dev` with `EVAL_VERSION=v2`.
+Before a new setup is scored on the dev part, `topics.py judge --part dev --runs <run>`
+judges the theses of its top 10 that have no judgment yet.
