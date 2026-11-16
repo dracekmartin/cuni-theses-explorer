@@ -8,6 +8,8 @@ on:
 jobs:
   quality:
     runs-on: ubuntu-latest
+    # Twice the budget of ten minutes (decision 0019).
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -29,11 +31,15 @@ jobs:
         run: uv run --no-sync lint-imports
 
       # No database in CI yet, so tests marked db do not run here (decision 0018).
-      - name: Tests (pytest)
-        run: uv run --no-sync pytest -m "not db and not model and not gpu"
+      - name: Tests (pytest) with branch coverage
+        run: uv run --no-sync coverage run -m pytest -m "not db and not model and not gpu" --durations=10
+
+      - name: Coverage of libs and apps
+        run: uv run --no-sync coverage report
 
   core-without-torch:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -63,6 +69,7 @@ jobs:
 
   commit-messages:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:

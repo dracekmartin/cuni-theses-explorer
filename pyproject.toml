@@ -96,6 +96,20 @@ markers = [
     "model: loads a real model",
     "gpu: needs a GPU, always together with model",
 ]
+# pytest-timeout stops a test after 120 s (decision 0019). The value has to be a string.
+timeout = "120"
+
+# Branch coverage of the application, no lower limit yet (decision 0019).
+[tool.coverage.run]
+branch = true
+source = ["libs", "apps"]
+omit = ["*/tests/*"]
+
+[tool.coverage.report]
+show_missing = true
+# The folders of packages have no __init__.py. Without this a module that no test imports
+# would be missing from the report.
+include_namespace_packages = true
 
 # Packages of the application. Experiments stay outside the workspace, their dependencies
 # are a group of their own.
@@ -129,11 +143,14 @@ explicit = true
 # Groups pin exact versions. A tool upgrade or a new library version is a deliberate change.
 [dependency-groups]
 dev = [
+    "basedpyright==1.40.2",
+    "coverage==7.17.3",
     "deptry==0.25.1",
+    "hypothesis==6.170.15",
     "import-linter==2.15",
     "pre-commit==4.6.2",
-    "basedpyright==1.40.2",
     "pytest==9.1.1",
+    "pytest-timeout==2.4.0",
     "ruff==0.16.6",
 ]
 # The environment that produced the reported results of the experiments.

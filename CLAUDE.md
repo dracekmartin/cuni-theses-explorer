@@ -90,6 +90,12 @@ and ideation documents live in the sibling repo `dracekmartin/diplomkaManagement
   `explorer.testing`, as plain code without pytest. A test that needs PostgreSQL is marked
   `db`, one that loads a real model `model`, one that needs a GPU both `model` and `gpu`.
   The name of a test describes the behavior it checks (decision 0018).
+- **Kinds of tests:** a pure function with a rule that holds for every input (fusion,
+  fingerprint, chunking, metrics) also gets a property test with Hypothesis. The contract
+  suite of each interface checks what every searcher, step, index builder or model adapter
+  promises. It finds the classes in the registry, so a new class changes no existing
+  test. Every batch command has a test that stops it, runs it again and compares the
+  result with a run that was not stopped (decision 0019).
 
 ## Quality gates
 
