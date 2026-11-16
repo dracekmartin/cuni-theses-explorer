@@ -28,16 +28,9 @@ jobs:
       - name: Layers inside explorer (import-linter)
         run: uv run --no-sync lint-imports
 
+      # No database in CI yet, so tests marked db do not run here (decision 0018).
       - name: Tests (pytest)
-        run: |
-          set +e
-          uv run --no-sync pytest
-          code=$?
-          if [ "$code" -eq 5 ]; then
-            echo "No tests collected yet."
-            exit 0
-          fi
-          exit $code
+        run: uv run --no-sync pytest -m "not db and not model and not gpu"
 
   core-without-torch:
     runs-on: ubuntu-latest
@@ -60,7 +53,7 @@ jobs:
       - name: Tests of explorer
         run: |
           set +e
-          uv run --no-sync pytest libs/explorer
+          uv run --no-sync pytest libs/explorer -m "not db and not model and not gpu"
           code=$?
           if [ "$code" -eq 5 ]; then
             echo "No tests collected yet."

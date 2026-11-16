@@ -40,6 +40,9 @@ select = [
     "D",     # docstrings of modules, classes and public functions
     "FIX",   # TODO, FIXME, XXX and HACK comments
     "TRY",   # raising and logging exceptions
+    "LOG",   # misuse of the module logging
+    "G",     # formatting of log messages
+    "TID251", # banned functions, see banned-api below
 ]
 # The class docstring covers __init__, and magic methods need none. A message written
 # where the exception is raised reads better than one moved into its class.
@@ -50,11 +53,19 @@ allowed-confusables = ["–", "\u00a0"]
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
+# Only a program configures logging (decision 0017).
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"logging.basicConfig".msg = "Only a program in apps/ configures logging, when it starts."
+"logging.config.dictConfig".msg = "Only a program in apps/ configures logging, when it starts."
+"logging.config.fileConfig".msg = "Only a program in apps/ configures logging, when it starts."
+
 [tool.ruff.lint.per-file-ignores]
 "{experiments,eval}/**" = [
     "RUF", "C4", "PIE", "PERF", "DTZ", "PT", "ARG", "A", "BLE", "PLE", "PLW", "PGH", "ERA",
-    "T20", "S", "FBT", "INP", "NPY", "FAST", "ASYNC", "ANN401", "D", "FIX", "TRY",
+    "T20", "S", "FBT", "INP", "NPY", "FAST", "ASYNC", "ANN401", "D", "FIX", "TRY", "LOG", "G",
+    "TID251",
 ]
+"apps/**" = ["TID251"]
 # Tests use plain assert and describe themselves by their names. Test folders are not
 # packages.
 "**/tests/**" = ["S101", "INP001", "D"]
@@ -74,10 +85,17 @@ strict = ["libs", "apps"]
 reportIgnoreCommentWithoutRule = "error"
 reportUnnecessaryTypeIgnoreComment = "error"
 
-[tool.pytest.ini_options]
+[tool.pytest]
 testpaths = ["experiments", "eval", "libs", "apps"]
 # importlib lets test files in different packages share a name.
-addopts = "-q --import-mode=importlib"
+addopts = ["-q", "--import-mode=importlib"]
+# A marker with a typo stops the run (decision 0018). pytest is pinned in uv.lock.
+strict = true
+markers = [
+    "db: needs PostgreSQL",
+    "model: loads a real model",
+    "gpu: needs a GPU, always together with model",
+]
 
 # Packages of the application. Experiments stay outside the workspace, their dependencies
 # are a group of their own.
@@ -146,6 +164,8 @@ containers = ["explorer"]
 # A new subpackage fails the check until it is placed in a layer.
 exhaustive = true
 layers = [
+    # Helpers for tests may use the whole core (decision 0018).
+    "testing",
     # Nothing in explorer imports the adapters, the registry finds them by name.
     "adapters",
     "overview | explanations | maps",

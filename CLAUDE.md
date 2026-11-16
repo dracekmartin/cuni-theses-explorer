@@ -85,6 +85,11 @@ and ideation documents live in the sibling repo `dracekmartin/diplomkaManagement
   secrets, and the text of a query only through the logger `explorer.queries` in the
   API. Validation errors without input values, and a library exception whose message can
   carry content is raised again `from None` (decision 0017).
+- **Test data:** only synthetic: ids `fake-…`, made-up names, sentences written by hand,
+  never a real thesis. The fake encoder and the builders of test data live in
+  `explorer.testing`, as plain code without pytest. A test that needs PostgreSQL is marked
+  `db`, one that loads a real model `model`, one that needs a GPU both `model` and `gpu`.
+  The name of a test describes the behavior it checks (decision 0018).
 
 ## Quality gates
 
