@@ -128,9 +128,8 @@ the repository and how the workspace is set up is decided in the engineering rec
 | --- | --- | --- |
 | `explorer` | the core library: domain model, catalog and harvest, texts and chunks, indexes and their PostgreSQL backends, the search core with all searchers and steps, model interfaces and HTTP adapters, overview, explanations, reading map artifacts | no other package of the workspace |
 | `explorer_models_local` | in-process model adapters with torch, and the model server that offers them over HTTP | `explorer` |
-| `explorer_map` | builds of thesis vectors, the neighbor graph and the topic map (umap-learn, hdbscan, faiss) | `explorer` |
 | `explorer_api` | the API program | `explorer`, and `explorer_models_local` only as an optional extra |
-| `explorer_batch` | the batch tools | `explorer`, and `explorer_models_local` and `explorer_map` only as optional extras |
+| `explorer_batch` | the batch tools, with the map builder (umap-learn, hdbscan, faiss) in the subpackage `explorer_batch.map_builder` | `explorer`, and `explorer_models_local` only as an optional extra |
 | `explorer_eval` | the evaluation tool | `explorer`, and `explorer_models_local` only as an optional extra |
 
 The core never imports torch. Programs reach the in-process adapters only through the
@@ -386,7 +385,7 @@ chunks do not depend on a model, and each index spec embeds them with its own mo
 | Chunker | the only writer of chunks. It splits texts and metadata into the chunks of one chunking, detects the language of each chunk and deletes the chunks of versions that are gone | `explorer` |
 | Index builders | builders of dense, lexical and sparse indexes. Each adds what changed since its last build and deletes its own entries of versions that are gone. The lexical builder lemmatizes each chunk with the lemmatizer of its language, the same one the query analyzer uses | `explorer` |
 | Cluster jobs | submit heavy jobs with their input to the cluster, fetch their results as files with manifests and import them: full index builds through their builder, map builds into artifacts | `explorer_batch` |
-| Map builder | builds thesis vectors, the neighbor graph and the topic map (section 4.3), on the serving node or as a cluster job | `explorer_map` |
+| Map builder | builds thesis vectors, the neighbor graph and the topic map (section 4.3), on the serving node or as a cluster job | `explorer_batch` |
 | Model adapters | the same HTTP adapters as in the API, for the embeddings and sparse weights of new chunks | `explorer` |
 
 #### Catalog and synchronization
@@ -976,7 +975,7 @@ subpackages form layers, checked as decision
 | LLM | LLMProvider | e-INFRA, a self-hosted LLM | configuration | the configuration of the overview, of explanations or of the map build | encapsulation, deferred binding |
 | verifier | Verifier | an LLM, later a small NLI model | configuration, an NLI model in code and deployment | for an NLI model a Verifier adapter and the model on the model server | encapsulation |
 | overview and explanations | OverviewMethod, Gate, Explainer | the default method with citations, the gates of section 4.3, the default explainer | configuration, a new method, gate or explainer in code | a class and the configuration of the overview or of explanations | encapsulation, deferred binding |
-| topic map | MapStep, thesis representation | projection, clustering and labels, thesis vectors as the mean of chunk vectors or as the vector of the abstract | configuration of the map build, a new step in code in `explorer_map` | a map step class and a new map build | encapsulation, deferred binding |
+| topic map | MapStep, thesis representation | projection, clustering and labels, thesis vectors as the mean of chunk vectors or as the vector of the abstract | configuration of the map build, a new step in code in `explorer_batch` | a map step class and a new map build | encapsulation, deferred binding |
 | what a deployment serves | deployment configuration | the default setup or the fallback setup without the reranker, the map version, the overview on or off | deployment | one line and a restart of the API | deferred binding |
 | batch compute | Cluster jobs | the MFF cluster with SLURM, MetaCentrum with PBS | deployment | job scripts for the other scheduler | encapsulation |
 

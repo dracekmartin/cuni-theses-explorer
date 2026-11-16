@@ -16,7 +16,6 @@ members = [
     "explorer-api",
     "explorer-batch",
     "explorer-eval",
-    "explorer-map",
     "explorer-models-local",
 ]
 default-groups = ["dev", "experiments"]
@@ -243,17 +242,13 @@ dependencies = [
 local-models = [
     { name = "explorer-models-local" },
 ]
-map = [
-    { name = "explorer-map" },
-]
 
 [package.metadata]
 requires-dist = [
     { name = "explorer", editable = "libs/explorer" },
-    { name = "explorer-map", marker = "extra == 'map'", editable = "libs/explorer-map" },
     { name = "explorer-models-local", marker = "extra == 'local-models'", editable = "libs/explorer-models-local" },
 ]
-provides-extras = ["local-models", "map"]
+provides-extras = ["local-models"]
 
 [[package]]
 name = "explorer-eval"
@@ -274,17 +269,6 @@ requires-dist = [
     { name = "explorer-models-local", marker = "extra == 'local-models'", editable = "libs/explorer-models-local" },
 ]
 provides-extras = ["local-models"]
-
-[[package]]
-name = "explorer-map"
-version = "0.1.0"
-source = { editable = "libs/explorer-map" }
-dependencies = [
-    { name = "explorer" },
-]
-
-[package.metadata]
-requires-dist = [{ name = "explorer", editable = "libs/explorer" }]
 
 [[package]]
 name = "explorer-models-local"

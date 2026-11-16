@@ -47,7 +47,7 @@ workspace "Theses Explorer" "Hybrid search, topic map and AI overview over the t
                     chunker = component "Chunker" "The only writer of chunks. Splits texts and metadata into the chunks of one chunking and detects the language of each chunk." "explorer"
                     builders = component "Index builders" "Builders of dense, lexical and sparse indexes. Each adds what changed since its last build and deletes its entries of versions that are gone." "explorer"
                     jobs = component "Cluster jobs" "Submit heavy jobs with their input, fetch their results as files with manifests, import them into the database." "explorer_batch"
-                    mapBuilder = component "Map builder" "Builds thesis vectors, the neighbor graph and the topic map, on the serving node or as a cluster job." "explorer_map"
+                    mapBuilder = component "Map builder" "Builds thesis vectors, the neighbor graph and the topic map, on the serving node or as a cluster job." "explorer_batch"
                     adapters = component "Model adapters" "The same HTTP adapters as in the API, for the embeddings and sparse weights of new chunks." "explorer"
                 }
                 evalTool = container "Evaluation tool" "Runs setups over an evaluation set on the notebook or as a job on the cluster, writes TREC runs and scores them." "Python, explorer_eval"

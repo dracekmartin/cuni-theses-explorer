@@ -7,11 +7,9 @@ dependencies = ["explorer"]
 
 [project.optional-dependencies]
 local-models = ["explorer-models-local"]
-map = ["explorer-map"]
 
 [tool.uv.sources]
 explorer = { workspace = true }
-explorer-map = { workspace = true }
 explorer-models-local = { workspace = true }
 
 [build-system]

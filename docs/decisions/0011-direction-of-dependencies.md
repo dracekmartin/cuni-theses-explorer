@@ -25,9 +25,7 @@ cannot slip past the checks.
 - When a program has an extra only so that the registry finds the in-process adapters,
   the extra is listed in `[tool.deptry] optional_dependencies_dev_groups`, and deptry
   reports a direct import of that package as an error (DEP004). `explorer-api`,
-  `explorer-batch` and `explorer-eval` list `local-models` there. `explorer-batch`
-  imports `explorer-map` directly, because the batch tools call the map builder
-  themselves, not through the registry.
+  `explorer-batch` and `explorer-eval` list `local-models` there.
 - import-linter checks the layers inside the core. A layers contract in the root
   `pyproject.toml` orders the subpackages of `explorer`. With `exhaustive = true`, a new
   subpackage fails the check until it is placed in a layer. One more contract forbids the

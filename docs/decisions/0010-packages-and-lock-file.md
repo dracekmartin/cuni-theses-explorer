@@ -1,15 +1,14 @@
 # 0010: Packages, layout and the lock file
 
-Date: 2026-11-03, plugins dropped on 2026-11-16. Status: accepted.
+Date: 2026-11-03, plugins dropped and the map moved into the batch tools on 2026-11-16.
+Status: accepted.
 
 ## Context
 
-The application has a core library, three programs (API, batch tools, evaluation) and two
-libraries with heavy dependencies (in-process models with the model server, the topic
-map). Some parts need
-torch and CUDA. Others must install
-without them, for example the API on a serving node without a GPU, or the tests of the
-core in CI. The code runs on a Windows notebook and on Linux (CI, the faculty cluster).
+The application has a core library, three programs (API, batch tools, evaluation) and
+a library of in-process models with torch, which also runs the model server. Some parts
+need torch and CUDA. Others must install without them, for example the API on a serving
+node without a GPU, or the tests of the core in CI. The code runs on a Windows notebook and on Linux (CI, the faculty cluster).
 The architecture decides which components get a package of their own
 ([architecture, Code packages](../architecture.md#code-packages)).
 
@@ -26,8 +25,8 @@ The architecture decides which components get a package of their own
   in editable mode, so changes take effect without reinstalling.
 - Each package uses the src layout: code in `src/<import name>/`, tests in `tests/` next
   to `src/`. The tests then import the installed package.
-- The import name is the package name with `_` instead of `-`: `explorer-map` is imported
-  as `explorer_map`.
+- The import name is the package name with `_` instead of `-`: `explorer-models-local` is
+  imported as `explorer_models_local`.
 - Python is pinned to 3.13 (`requires-python = "==3.13.*"`).
 - Each package has a `py.typed` file, so the type checker in strict mode uses its types
   when another package imports it.
@@ -70,8 +69,9 @@ The architecture decides which components get a package of their own
 - **One package with optional extras for the heavy parts.** Simpler to set up, but nothing
   would stop the core from importing torch.
 - **A lock per package.** Versions would drift apart between the API and the batch tools,
-  and one developer would keep six locks up to date.
+  and one developer would keep five locks up to date.
 - **Flat layout without `src/`.** Tests would import the source folder even when the
   package is installed wrong, and the error would show only in deployment.
-- **Subpackages of one name (`explorer.map` instead of `explorer_map`).** `explorer` is
-  a regular package with an `__init__.py`, so another package cannot add modules under it.
+- **Subpackages of one name (`explorer.models_local` instead of `explorer_models_local`).**
+  `explorer` is a regular package with an `__init__.py`, so another package cannot add
+  modules under it.

@@ -23,8 +23,8 @@ unless it is installed with its `nodejs` extra.
 - `experiments/` and `eval/` stay in standard mode, `libs/` and `apps/` in strict mode
   (decision 0003).
 - Untyped libraries in `libs/` and `apps/`, in this order of preference:
-  1. They are imported only in the packages with adapters (`explorer-models-local`,
-     `explorer-map`).
+  1. They are imported only in `explorer-models-local` and in the map builder of the
+     batch tools (`explorer_batch.map_builder`).
   2. Official stubs are installed together with their library, for example `scipy-stubs`
      with scipy.
   3. A library without types that several modules use gets a small stub in `typings/`.
