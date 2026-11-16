@@ -54,10 +54,10 @@ and ideation documents live in the sibling repo `dracekmartin/diplomkaManagement
   `uv add --package <package>`. Tools and libraries of the experiments go into
   `--group dev` or `--group experiments` with an exact version (`name==1.2.3`).
 - **Untyped libraries in `libs/` and `apps/`:** import them only in `explorer-models-local`
-  or `explorer-map`. In this order: install their official stubs, or write a stub in
-  `typings/` when several modules use the library, or as the last resort keep the calls
-  in one module that turns off the unknown-type reports at its top with a reason. Its
-  public functions take and return typed values (decision 0013).
+  or `explorer_batch.map_builder`. In this order: install their official stubs, or write
+  a stub in `typings/` when several modules use the library, or as the last resort keep
+  the calls in one module that turns off the unknown-type reports at its top with
+  a reason. Its public functions take and return typed values (decision 0013).
 - **Docstrings and comments:** a docstring starts with one sentence, on a single line, on
   what the function returns or does. `Args`, `Returns` and `Raises` only where the name
   and the type do not say enough. A comment is one line and says why. A leading
