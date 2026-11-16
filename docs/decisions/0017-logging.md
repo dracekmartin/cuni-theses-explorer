@@ -89,8 +89,8 @@ Checks:
 
 - When DSpace withdraws a thesis and the chunker deletes its chunks, the general log holds
   nothing of it but its id. The log of queries can hold a query that repeats its title
-  until the log is deleted, and whether backups follow the deletion waits for the
-  supervisor (architecture, section 7.4).
+  until the log is deleted. Backups are not cleaned of a withdrawn thesis (architecture,
+  section 7.4).
 - Finding everything about one thesis in the logs means searching for its id.
 - Records written by threads that our pools do not own, such as those of the pool of
   database connections, carry no id of a request.

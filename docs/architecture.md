@@ -42,7 +42,8 @@ Constraints:
   commercial APIs.
 - The system indexes full text only where DSpace publishes it openly. Metadata of every
   record DSpace shows publicly is searchable too, as in DSpace.
-- The serving node is not known yet. Heavy batch jobs (bulk embeddings, evaluation runs
+- No serving node is fixed. Measurements run on the hardware that is available, and each
+  measurement names it (chapter 6). Heavy batch jobs (bulk embeddings, evaluation runs
   at full scale, builds of the topic map) run on the MFF HPC cluster, which schedules jobs
   with SLURM and offers GPU nodes. MetaCentrum, scheduled with PBS, is the alternative.
   Light batch work runs on the serving node.
@@ -327,12 +328,14 @@ by that registration.
 Each chunk gets a language at indexing, detected from its own text. A Czech thesis
 carries its English abstract in its text, and the abstract of a Slovak thesis lies in the
 Czech slot of the metadata, so the language of the thesis would be wrong for many chunks.
-The thesis keeps the language of its metadata for filters and display. Czech, Slovak and
-English are full languages in the analysis of chunks and queries, each with its own
-lemmatizer.
+The thesis keeps the language of its metadata for filters and display. Czech and English
+are full languages in the analysis of chunks and queries, each with its own lemmatizer.
+Slovak gets what is cheap: a chunk detected as Slovak gets the Slovak lemmatizer, but the
+query analyzer does not choose Slovak, and the evaluation reports no separate result on
+Slovak queries.
 
-The query analyzer picks Czech, Slovak or English with a confidence, or decides that the
-query has no language: a name, a code, an abbreviation or a formula. No language is
+The query analyzer picks Czech or English with a confidence, or decides that the query
+has no language: a name, a code, an abbreviation or a formula. No language is
 a valid result, not an error. For such a query the lexical source searches chunks in all
 languages, because exact matches of names and codes help most there. The overview uses
 the confidence to choose the language of its answer. Whether the language of the UI helps
@@ -386,9 +389,9 @@ chunks do not depend on a model, and each index spec embeds them with its own mo
 | Batch commands | CLI commands for synchronization, text extraction, chunking, index builds, cluster jobs and map builds. Cron starts the regular ones. Every run records its start, end, outcome and counts in the catalog, and the operator page shows them | `explorer_batch` |
 | Harvester | reads changed records from OAI-PMH in the xoai format and continues after a crash. It also finds withdrawn records, which OAI does not mark | `explorer` |
 | Catalog | the only writer of the schema `catalog`: versions of theses, metadata, access status, supervisors, twin groups, texts and the runs of batch commands | `explorer` |
-| Text extraction | takes the text file that DSpace makes from the PDF, or extracts the text from the public PDF where that file is missing or empty. It cleans abstracts and takes the abstract from the text where the metadata abstract is missing or cut | `explorer` |
-| Chunker | the only writer of chunks. It splits texts and metadata into the chunks of one chunking, detects the language of each chunk and deletes the chunks of versions that are gone | `explorer` |
-| Index builders | builders of dense, lexical and sparse indexes. Each adds what changed since its last build and deletes its own entries of versions that are gone. The lexical builder lemmatizes each chunk with the lemmatizer of its language, the same one the query analyzer uses | `explorer` |
+| Text extraction | takes the text file that DSpace makes from the PDF, or extracts the text from the public PDF where that file is missing or empty. It cleans abstracts and takes the abstract from the text where the metadata abstract is missing or cut. It drops the stored text and PDF of versions that are gone and of texts that are no longer public | `explorer` |
+| Chunker | the only writer of chunks. It splits texts and metadata into the chunks of one chunking, detects the language of each chunk and deletes the chunks of versions that are gone and the body chunks of texts that are no longer public | `explorer` |
+| Index builders | builders of dense, lexical and sparse indexes. Each adds what changed since its last build and deletes its own entries of versions that are gone and of body chunks whose text is no longer public. The lexical builder lemmatizes each chunk with the lemmatizer of its language, the same one the query analyzer uses | `explorer` |
 | Cluster jobs | submit heavy jobs with their input to the cluster, fetch their results as files with manifests and import them: full index builds through their builder, map builds into artifacts | `explorer_batch` |
 | Map builder | builds thesis vectors, the neighbor graph and the topic map (section 4.3), on the serving node or as a cluster job | `explorer_batch` |
 | Model adapters | the same HTTP adapters as in the API, for the embeddings and sparse weights of new chunks | `explorer` |
@@ -418,8 +421,14 @@ and files of a record as the harvester saw it. Chunks and index entries belong t
 version, and the visibility guard compares them with the current one (section 4.1).
 
 When DSpace locks the text of a thesis, the catalog marks it as not public and the
-visibility guard hides its body chunks at once. Whether the text, its chunks and its
-vectors are also deleted, and how fast, is open (see Open below).
+visibility guard hides its body chunks at once.
+
+Hiding has to be quick, deletion does not. The visibility guard hides a withdrawn thesis,
+the old version of a corrected one and the body chunks of a locked one from the first
+synchronization run that sees the change, at the latest from the periodic full run. The
+stored text and PDF, the chunks and the index entries of what it hides leave in the next
+runs of text extraction, the chunker and the builders, with no deadline of their own.
+Backups are not cleaned of them.
 
 The catalog also records:
 
@@ -458,8 +467,9 @@ The catalog also records:
 - Metadata chunks hold the title, the keywords and the abstract, one language each.
   Theses without public text get only metadata chunks.
 - Each chunking has its own schema `chunks_<chunking>`, shared by all index builds over it.
-  The chunker deletes the chunks of withdrawn and older versions. Until each build over
-  the chunking has caught up, the visibility guard hides its entries of those versions.
+  The chunker deletes the chunks of withdrawn and older versions, and the body chunks of
+  texts that are no longer public. Until each build over the chunking has caught up, the
+  visibility guard hides its entries of those chunks.
 
 #### Index builds
 
@@ -471,10 +481,10 @@ snapshot the build covers, counts, and where and when it was built.
 
 Every builder keeps the same contract:
 
-- It asks the catalog which versions to add and which to remove since its last build:
-  new and changed versions to add, older, withdrawn and no longer public ones to remove.
-  It deletes its own entries of the removed versions, so that their text does not stay in
-  the index.
+- It asks the catalog what changed since its last build: new and changed versions to add,
+  older and withdrawn versions to remove, and versions whose text is no longer public, of
+  which it keeps only the metadata chunks. It deletes its own entries of whatever it
+  removes, so that their text does not stay in the index.
 - It can run again without harm, and after a crash or a preempted job it continues where
   it stopped.
 - Cached embeddings are keyed by a hash of the text, the chunking and the encoder (model,
@@ -504,13 +514,11 @@ Where builds run:
 - How often synchronization, chunking and index updates run, and how often the map and
   the neighbor graph are rebuilt. It depends on what each step costs, so the intervals
   come after the first measurements.
-- How fast a withdrawn, corrected or locked thesis has to leave the texts, indexes and
-  caches, and whether backups have to forget it too. This waits for the supervisor.
 - Storage at full scale: PostgreSQL with pgvector stays until a scaling test on the
   cluster shows whether it is enough, and whether the vector index needs quantization or
   a smaller form (0005).
-- Whether thesis texts may stay in the storage of the cluster during jobs. This waits for
-  the administrators of the cluster.
+- Whether thesis texts may stay in the storage of the cluster during jobs, and a directory
+  there for large data. This waits for the administrators of the cluster.
 - Whether DSpace derives the defence status from the grade in the same way. The rule above
   follows what the records show.
 
@@ -594,6 +602,8 @@ changes, is withdrawn or loses its public text (chapter 3).
 - The overview gets the same query, filters and setup as the search and works with the
   same candidates. It takes the result of the search from the short cache of the platform
   wrapper, or computes it again, because the search is deterministic.
+- The overview cites only theses with public text. A thesis without public text stays in
+  the results, but gives the overview no chunks.
 - It is a request of its own, so the search returns its results without waiting for it.
   The overview comes as a whole, and a deployment can switch it off.
 - The overview selects chunks with a limit per thesis and in total, chooses the citations
@@ -625,10 +635,6 @@ changes, is withdrawn or loses its public text (chapter 3).
 
 - The thresholds of the gates come with the implementation.
 - What the safety gate refuses waits for the supervisor.
-- Whether theses without public text stay findable by metadata, or are left out of search
-  as they are left out of the map, waits for the supervisor. The same answer decides
-  whether it is enough that they have no neighbors and that the chart by year starts in
-  2006.
 - Pages and colors for supervisors (UC9) can stand on the catalog and the clusters of the
   map, once the names of supervisors are joined (section 4.2). Their scope in the UI is
   open.
@@ -690,13 +696,14 @@ drawn.
 - Step 6 stands for three things in the API. The visibility guard drops the thesis from
   every result, cached ones included, the API drops cached overviews and explanations that
   cite it, and the map comes with the thesis on its list of hidden theses.
-- The chunker deletes the chunks of the thesis and each builder its entries, in their next
-  runs (step 7). How fast this has to happen is open (section 4.2).
+- Text extraction drops the stored text and PDF of the thesis, the chunker its chunks and
+  each builder its entries, in their next runs (step 7). This has no deadline, because the
+  guard already hides the thesis (section 4.2).
 - A corrected thesis, whose metadata or files changed, gets a new version. The visibility
   guard hides the entries of the old version at once, and the next runs replace them with
   the chunks and entries of the new version.
 - A text that DSpace locks works like a withdrawal for the body chunks: the guard hides
-  them at once, and whether they are deleted is open.
+  them at once, and the next runs delete them.
 
 ### 5.4 An evaluation run
 
@@ -749,11 +756,12 @@ drawn.
 
 ## 6. Deployment
 
-The serving node is not known yet. The prototype does not have to run in operation, but it
-has to show that it could (chapter 1). Three things show it: the deployment views below
-with the hardware the whole university needs, Docker Compose that starts the system, and
-one run of the whole pipeline over the whole university as jobs on the faculty cluster or
-on MetaCentrum.
+No serving node is fixed. The prototype does not have to run in operation, but it has to
+be ready to run (chapter 1). Three things show it: the deployment views below with the
+hardware the whole university needs, Docker Compose that starts the system, and one run
+of the whole pipeline over the whole university as jobs on the faculty cluster or on
+MetaCentrum. Whatever can be measured is measured on the hardware that is available, the
+notebook and the nodes of the cluster, and each measurement names its hardware.
 
 ### 6.1 Environments
 
@@ -820,11 +828,12 @@ What follows from the estimates:
 
 ### 6.4 Open
 
-- Where the prototype runs and on what hardware. This waits for the supervisor.
 - The storage at full scale and the form of the vector index, after the scaling test on
   the cluster ([0005](decisions/0005-batch-jobs-on-the-faculty-cluster.md)).
-- Whether thesis texts may stay in the storage of the cluster during jobs, a question for
-  the administrators of the cluster.
+- Whether thesis texts may stay in the storage of the cluster during jobs, and a directory
+  there for large data. These are questions for the administrators of the cluster.
+- An account for 7 days on the large GPUs of gpulab (the queue `gpu-long-ksi`), asked of
+  the coordinator of that account. Without it, jobs on these GPUs have 12 hours.
 - The cost of the reranker and of embedding new theses on a CPU.
 - How long an evaluation job at full scale takes to load the index builds of its set into
   its own PostgreSQL (section 5.4).
@@ -893,8 +902,10 @@ Several parts carry this rule:
   search, which already passed the guard (sections 4.3 and 5.5).
 - Cached overviews and explanations leave the cache when a cited thesis changes, is
   withdrawn or loses its public text (section 7.3).
-- The chunker deletes the chunks of versions that are gone, and each builder its entries
-  (section 4.2). How fast, and whether backups follow, waits for the supervisor.
+- Text extraction drops the stored texts and PDFs, the chunker the chunks and each builder
+  its entries of versions that are gone and of texts that are no longer public, in their
+  next runs. Deletion has no deadline, because the guard hides them first, and backups are
+  not cleaned (section 4.2).
 
 ### 7.5 Query safety and protection of content
 
@@ -935,8 +946,10 @@ requests.
 
 - Each chunk gets its language from its own text. The thesis keeps the language of its
   metadata for filters and display (section 4.2).
-- Czech, Slovak and English are full languages. The lexical index builder and the query
-  analyzer share one lemmatizer per language (sections 4.1 and 4.2).
+- Czech and English are full languages. Slovak chunks get their own lemmatizer, but the
+  query analyzer chooses only Czech or English, and the evaluation reports no separate
+  result on Slovak queries. The lexical index builder and the query analyzer share one lemmatizer per
+  language (sections 4.1 and 4.2).
 - The query analyzer returns a language with a confidence, or no language. The fusion knows
   which branches could see a candidate, and the overview answers in the language of the UI
   unless the query is clearly in another one (sections 4.1 and 4.3,
@@ -969,7 +982,7 @@ subpackages form layers, checked as decision
 | candidate source | Step | dense vectors, lexical (BM25) over lemmas, metadata chunks only, learned sparse weights, another searcher | configuration, a new kind in code | a step class, for a source with its own index also an index builder, then an index build and a setup | encapsulation, restricted dependencies, deferred binding |
 | other steps | Step | fusion (weighted RRF, weighted sum of normalized scores, how a missed and a blind branch count), aggregation (best chunk, sum or mean of the n best chunks), passage selection, filter, router | configuration, a new method in code | one step class and a setup | encapsulation, deferred binding |
 | weights, depths, chunks per thesis | setup | any value | configuration | a new setup file, no new index build | deferred binding |
-| query analysis | QueryAnalyzer | Czech, Slovak or English with a confidence, or no language, later translation of the query as a step | configuration, a new language in code | a lemmatizer and a change of the analyzer for a new language | encapsulation |
+| query analysis | QueryAnalyzer | Czech or English with a confidence, or no language, later translation of the query as a step | configuration, a new language in code | a lemmatizer and a change of the analyzer for a new language | encapsulation |
 | lemmatizer | Lemmatizer | simplemma for Czech, Slovak and English, UDPipe as an optional variant | configuration, a new lemmatizer in code | new lexical index builds, and a class for a lemmatizer that is not there yet | encapsulation, deferred binding |
 | embedding model | EmbeddingProvider, index spec | BGE-M3, Qwen3-Embedding-4B | configuration | an index spec, a setup, the model on the model server and a new index build, a cluster job at full scale | encapsulation, deferred binding |
 | reranker | Reranker | cross-encoders such as bge-reranker-v2-m3, later an LLM | configuration, an LLM reranker in code | a setup and the model on the model server. An LLM reranker needs a step class or a Reranker adapter over LLMProvider | encapsulation, deferred binding |
@@ -1000,7 +1013,7 @@ The quality goals of chapter 1 and the scenarios that check them:
 | 3. Faithful to the source | S6 |
 | 4. Reproducible | S5, S8 |
 | 5. Fast and affordable | S9, and the hardware a full index needs (chapter 6) |
-| 6. Operable by one person | none yet. Synchronization and index updates run without a maintainer (UC10), and their measure comes with the deployment |
+| 6. Operable by one person | none, because no serving node is fixed (chapter 6). Synchronization and index updates are designed to run without a maintainer (UC10) |
 
 Each scenario has six parts: who or what causes it (source), what happens (stimulus),
 which part of the system it reaches (artifact), in which situation (environment), what
@@ -1016,10 +1029,10 @@ other scenarios have the measure in their row.
 | S3 | maintainer | adds a whole search: the search of DSpace | search core | development | a searcher class in a new module, registered under a name, and a setup that uses it | new files and the registration of the new class, no other existing file changes |
 | S4 | maintainer | adds a candidate source with its own index: learned sparse weights | search core, index builders | development, the full build on the cluster | a step class and an index builder in new modules, an index build, a setup | as in S3 |
 | S5 | maintainer | compares two setups | evaluation tool | development, a frozen version of the evaluation set | `eval run` with both setups writes their TREC runs and results files and scores them | one command, shared steps run once |
-| S6 | DSpace | withdraws a thesis, corrects it or locks its text | catalog, index builds, caches, topic map | operation | a withdrawn thesis is no longer found or shown: search, overview, explanations, map, neighbors. A corrected thesis shows only in its new version. A locked text is no longer found or quoted, the thesis stays findable by its metadata and leaves the map | hidden within X hours after the change in DSpace, deleted within Y, and backups included or not. X, Y and the backups wait for the supervisor (section 4.2) |
+| S6 | DSpace | withdraws a thesis, corrects it or locks its text | catalog, index builds, caches, topic map | operation | a withdrawn thesis is no longer found or shown: search, overview, explanations, map, neighbors. A corrected thesis shows only in its new version. A locked text is no longer found or quoted, the thesis stays findable by its metadata and leaves the map | hidden from the first synchronization run that sees the change, at the latest from the periodic full run. Deleted in the next runs of the extractor, the chunker and the builders, with no deadline. Backups are not cleaned (section 4.2) |
 | S7 | maintainer | switches the overview to another LLM | configuration of the overview | development or operation | the overview uses the new model, cached overviews of the old configuration are no longer served | no line of code, the fingerprint of the overview changes |
 | S8 | reviewer of the thesis | repeats a reported result | setup, index builds of the version, evaluation set | the same frozen version, the same index builds, the same adapters on the same kind of hardware | the same TREC run | identical rankings for setups whose models are self-hosted and pinned, apart from ties that another float precision can reorder. A setup with a model from e-INFRA records the model and the date, and a result that must repeat uses a self-hosted pinned model instead (decision 0004) |
-| S9 | user | sends a query | API with the default setup | operation on the serving node under normal load | the ranked theses | the results within a few seconds (UC1) for 95 % of the queries of the evaluation set. The limit and the load come with the hardware of the serving node |
+| S9 | user | sends a query | API with the default setup | the hardware that is available, without other load: Docker Compose on the notebook over the corpus of an evaluation set, and a job on the cluster with its own PostgreSQL over the index of the whole university | the ranked theses | the results within a few seconds (UC1) for 95 % of the queries of the evaluation set. Each result names the hardware and the number of chunks in the index, because no serving node is fixed (chapter 6) |
 
 ## 10. Decisions
 
@@ -1031,7 +1044,7 @@ other scenarios have the measure in their row.
 | [0004](decisions/0004-models-at-query-time.md) | models behind interfaces, adapters in process or over HTTP, one model server for all programs in deployment |
 | [0005](decisions/0005-batch-jobs-on-the-faculty-cluster.md) | heavy batch jobs on the faculty cluster, results come back as files |
 | [0006](decisions/0006-search-core-with-replaceable-searchers.md) | a whole search behind the searcher interface, the default searcher as a tree of steps from a TOML setup, new parts as named classes in the registry |
-| [0007](decisions/0007-language-handling.md) | the language of each chunk from its text, Czech, Slovak and English as full languages, queries with no language, the default handling of the lexical branch left to the evaluation |
+| [0007](decisions/0007-language-handling.md) | the language of each chunk from its text, Czech and English as full languages and Slovak only for chunks, queries with no language, the default handling of the lexical branch left to the evaluation |
 
 Numbers up to 0009 are reserved for architecture decisions. Planned: storage at full
 scale, after the scaling test on the cluster.

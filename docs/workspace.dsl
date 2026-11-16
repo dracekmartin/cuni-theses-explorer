@@ -180,7 +180,7 @@ workspace "Theses Explorer" "Hybrid search, topic map and AI overview over the t
             deploymentNode "Web browser" "The browser of a user." "" {
                 containerInstance explorer.webUi serving
             }
-            servingNode = deploymentNode "Serving node" "Not known yet. One Linux machine, with or without a GPU." "Linux, Docker Compose" {
+            servingNode = deploymentNode "Serving node" "No fixed machine. One Linux machine, with or without a GPU." "Linux, Docker Compose" {
                 containerInstance explorer.proxy serving
                 containerInstance explorer.api serving
                 containerInstance explorer.modelServer serving
@@ -344,7 +344,7 @@ workspace "Theses Explorer" "Hybrid search, topic map and AI overview over the t
             explorer.webUi -> explorer.proxy "Calls the API"
             explorer.proxy -> explorer.api "Forwards the request"
             explorer.api -> explorer.database "Drops the thesis from results and caches, lists it as hidden with the map"
-            explorer.batchTools -> explorer.database "Deletes its chunks and index entries in the next runs"
+            explorer.batchTools -> explorer.database "Deletes its text, chunks and index entries in the next runs"
             autoLayout lr
         }
 

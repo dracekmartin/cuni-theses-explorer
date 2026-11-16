@@ -1,6 +1,6 @@
 # 0007: Language handling
 
-Date: 2026-11-03. Status: accepted.
+Date: 2026-11-03, Slovak no longer a full language on 2026-11-16. Status: accepted.
 
 ## Context
 
@@ -33,13 +33,16 @@ ones. Real queries will be shorter.
 
 - The chunker detects the language of each chunk from its own text, metadata chunks
   included. The thesis keeps the language of its metadata for filters and display.
-- Czech, Slovak and English are full languages in the analysis of chunks and queries, each
-  with its own lemmatizer, which the lexical builder and the query analyzer share. The
-  default is simplemma (MIT). UDPipe, with models under CC BY-NC-SA, is only an optional
-  variant, because a non-commercial licence is never the default. If UDPipe wins clearly
-  in the evaluation, the supervisor or ÚFAL (the Institute of Formal and Applied
-  Linguistics at MFF, which publishes UDPipe) is asked about its licence.
-- The query analyzer returns Czech, Slovak or English with a confidence, or no language,
+- Czech and English are full languages in the analysis of chunks and queries, each with
+  its own lemmatizer, which the lexical builder and the query analyzer share. The default
+  is simplemma (MIT). UDPipe, with models under CC BY-NC-SA, is only an optional variant,
+  because a non-commercial licence is never the default. If UDPipe wins clearly in the
+  evaluation, ÚFAL (the Institute of Formal and Applied Linguistics at MFF, which
+  publishes UDPipe) is asked about its licence.
+- Slovak gets only what is cheap. A chunk detected as Slovak gets the Slovak lemmatizer,
+  but the query analyzer does not choose Slovak, and the evaluation reports no separate
+  result on Slovak queries and tunes nothing for them.
+- The query analyzer returns Czech or English with a confidence, or no language,
   which is a valid result, not an error. A query without a language searches lexically in
   chunks of all languages, because exact matches of names and codes help most there.
 - For a query with a language, the fusion treats a lexical source as blind to chunks in
@@ -76,10 +79,13 @@ ones. Real queries will be shorter.
   helped e5-small on rare terms spelled alike in both languages (Artemisia, Databricks) in
   experiment 03. BGE-M3 is not measured yet, and the lemmatizers must not mangle names.
 - The evaluation has to measure MRR@10 for queries in the same language (680 in v1) and in
-  another language, the share of theses in another language in the top 10, queries with
-  names and codes, Slovak queries, and whether Slovak hurts Czech. The evaluation set v1
-  has 23 Slovak queries, all on titles, and none with such exact terms. Version v2 of the
-  set adds Slovak queries.
+  another language, the share of theses in another language in the top 10, and queries
+  with names and codes. The evaluation set v1 has none with such exact terms. Slovak
+  queries stay in the sets (v1 has 23, all on titles), but the evaluation reports no
+  separate result on them and tunes nothing for them.
+- A Slovak query gets Czech, English or no language, so its lemmas need not match those
+  of Slovak chunks, and the lexical source finds Slovak theses worse than Czech ones. The
+  dense source needs no language. This cost is not measured.
 - Open: how a query with no language is lemmatized, and which language and lemmatizer
   a chunk in German, French or another language gets (882 German, 542 French and about
   460 other theses).
@@ -100,3 +106,8 @@ ones. Real queries will be shorter.
   exact matches of names and codes are lost.
 - **UDPipe as the default lemmatizer.** More accurate (99.5 % for Czech), but its models
   are under CC BY-NC-SA, and the project rejected the embeddings of Jina for that reason.
+- **Slovak as a full language,** the decision of 2026-11-03, dropped on 2026-11-16 after
+  the meeting with the supervisor. A third full language would show that the core
+  generalizes to more languages. But the query analyzer would recognize only 85.1 % of
+  the Czech queries, and the evaluation would need Slovak queries that someone checks,
+  for 2.7 % of the theses.
