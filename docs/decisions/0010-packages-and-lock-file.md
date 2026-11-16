@@ -1,11 +1,13 @@
 # 0010: Packages, layout and the lock file
 
-Date: 2026-11-03. Status: accepted.
+Date: 2026-11-03, plugins dropped on 2026-11-16. Status: accepted.
 
 ## Context
 
-The application has a core library, three programs (API, batch tools, evaluation) and
-plugins that show replaceability. Some parts need torch and CUDA. Others must install
+The application has a core library, three programs (API, batch tools, evaluation) and two
+libraries with heavy dependencies (in-process models with the model server, the topic
+map). Some parts need
+torch and CUDA. Others must install
 without them, for example the API on a serving node without a GPU, or the tests of the
 core in CI. The code runs on a Windows notebook and on Linux (CI, the faculty cluster).
 The architecture decides which components get a package of their own
@@ -14,12 +16,11 @@ The architecture decides which components get a package of their own
 ## Decision
 
 - The Python code of the application is a uv workspace. Every folder in `libs/`
-  (libraries and plugins) and `apps/` (programs) is a package with its own
+  (libraries) and `apps/` (programs) is a package with its own
   `pyproject.toml` and its own dependencies. One `uv.lock` in the root pins the versions
   for Windows and Linux together. `experiments/` and `eval/` stay outside the workspace.
-- A component gets a package only when it has heavy dependencies, runs as a program of
-  its own, or is a plugin. Everything else is a subpackage, a folder of modules inside
-  a package.
+- A component gets a package only when it has heavy dependencies or runs as a program of
+  its own. Everything else is a subpackage, a folder of modules inside a package.
 - A package names another package of the workspace in its dependencies and marks it with
   `{ workspace = true }` in `[tool.uv.sources]`. uv then installs it from the repository
   in editable mode, so changes take effect without reinstalling.
@@ -67,10 +68,9 @@ The architecture decides which components get a package of their own
 ## Alternatives considered
 
 - **One package with optional extras for the heavy parts.** Simpler to set up, but nothing
-  would stop the core from importing torch, and a plugin inside the core package shows no
-  replaceability.
+  would stop the core from importing torch.
 - **A lock per package.** Versions would drift apart between the API and the batch tools,
-  and one developer would keep eight locks up to date.
+  and one developer would keep six locks up to date.
 - **Flat layout without `src/`.** Tests would import the source folder even when the
   package is installed wrong, and the error would show only in deployment.
 - **Subpackages of one name (`explorer.map` instead of `explorer_map`).** `explorer` is

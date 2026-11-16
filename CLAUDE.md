@@ -44,10 +44,10 @@ and ideation documents live in the sibling repo `dracekmartin/diplomkaManagement
   `experiments/README.md` holds every setup with its newest result and status, and an
   experiment that adds or reruns a setup updates it.
 - **Packages:** `libs/` and `apps/` form a uv workspace (decision 0010). Create a new
-  package only for heavy dependencies, a program of its own, or a plugin. Anything else
-  goes into a subpackage. A package imports only what its `pyproject.toml` declares,
-  plugins import only `explorer.plugin`, and a new subpackage of `explorer` needs a place
-  in the layers in the root `pyproject.toml` (decision 0011).
+  package only for heavy dependencies or a program of its own. Anything else goes into
+  a subpackage. A package imports only what its `pyproject.toml` declares, and a new
+  subpackage of `explorer` needs a place in the layers in the root `pyproject.toml`
+  (decision 0011).
 - **Dependencies:** never install with pip, `uv sync` removes everything that is not in
   `uv.lock`. Run `uv sync` from the repository root: in a package folder it keeps only
   that package and removes the rest from `.venv`. Add a library to a package with

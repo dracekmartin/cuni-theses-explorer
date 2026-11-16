@@ -63,8 +63,8 @@ replaces its models without notice.
   corpus embeddings never depend on it. An LLM, reranker or verifier taken from e-INFRA can
   still change its answers, so an evaluation records the model name and date, and runs that
   must be repeatable use a self-hosted model with a pinned version.
-- A plugin that needs a SparseEncoder depends only on `explorer` as a package. At run time
-  it needs an adapter that offers sparse weights: the in-process one or our model server.
+- The sparse source needs an adapter that offers sparse weights at run time: the
+  in-process one or our model server.
   Whether TEI or vLLM offer the sparse weights of BGE-M3 is not verified.
 
 ## Alternatives considered

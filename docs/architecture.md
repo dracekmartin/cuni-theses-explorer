@@ -94,7 +94,7 @@ Evaluation:
 | API | public REST API with a version in the path (`/v1`). The search core, the overview and the explanations run inside it as a library. It sends the topic map as one response per map version. Limits for expensive endpoints and for parallel GPU and LLM work | Python, FastAPI |
 | Model server | query embeddings, reranking and sparse weights for the API, the batch tools and the evaluation tool, on a GPU or on the CPU. By default it is our own service: it offers the in-process adapters over HTTP with the same endpoints as TEI. TEI or vLLM can take its place when throughput matters. On the notebook and in tests the models can run inside the program instead ([0004](decisions/0004-models-at-query-time.md)) | Python, FastAPI |
 | Database | catalog, chunks, indexes, map data and caches | PostgreSQL with pgvector |
-| File storage | results of cluster jobs (vectors, map builds) with their manifests, kept for a repeated import, and PDFs for own text extraction. Only the batch tools use it | file system |
+| File storage | results of cluster jobs (index builds, map builds) with their manifests, kept for a repeated import, and PDFs for own text extraction. Only the batch tools use it | file system |
 | Batch tools | synchronization with DSpace, chunking, index builds and imports, map builds. Cron starts them on the serving node, heavy jobs run on the cluster (SLURM) or MetaCentrum (PBS) ([0005](decisions/0005-batch-jobs-on-the-faculty-cluster.md)) | Python |
 | Evaluation tool | runs setups over an evaluation set on the notebook or as a job on the cluster, writes TREC runs and scores them | Python |
 
@@ -104,7 +104,7 @@ Each schema of the database has one writer:
 | --- | --- | --- |
 | `catalog` | batch tools (synchronization, text extraction, records of runs) | theses, versions, metadata, supervisors, twin groups, extracted texts, access status, runs of batch commands |
 | `chunks_<chunking>` | batch tools (chunking) | the chunks of one chunking, shared by every index build that uses it |
-| `index_<build>` | batch tools (index builds, imports, plugins through their index storage) | one schema per index build: its manifest, vectors and their index, lexical postings or the data of a plugin |
+| `index_<build>` | batch tools (index builds and imports) | one schema per index build: its manifest, vectors and their index, lexical postings or sparse weights |
 | `artifacts` | batch tools (map builds) | thesis vectors, neighbor graph with the chunk pairs of its edges, versions of the topic map with clusters and labels |
 | `cache` | API | search results for a few minutes, overviews, explanations |
 
@@ -119,28 +119,24 @@ writer.
 ### Code packages
 
 The Python code is a uv workspace. A component gets a package of its own only when it has
-heavy dependencies such as torch, runs as a program of its own, or is a plugin that shows
-replaceability. Other components are folders inside a package. Where the packages live in
+heavy dependencies such as torch, or runs as a program of its own. Other components are
+folders inside a package. Where the packages live in
 the repository and how the workspace is set up is decided in the engineering records
 (numbers from 0010).
 
 | Package | Contents | May depend on |
 | --- | --- | --- |
-| `explorer` | the core library: domain model, catalog and harvest, texts and chunks, indexes and their PostgreSQL backends, the search core, model interfaces and HTTP adapters, overview, explanations, reading map artifacts | no other package of the workspace |
+| `explorer` | the core library: domain model, catalog and harvest, texts and chunks, indexes and their PostgreSQL backends, the search core with all searchers and steps, model interfaces and HTTP adapters, overview, explanations, reading map artifacts | no other package of the workspace |
 | `explorer_models_local` | in-process model adapters with torch, and the model server that offers them over HTTP | `explorer` |
 | `explorer_map` | builds of thesis vectors, the neighbor graph and the topic map (umap-learn, hdbscan, faiss) | `explorer` |
 | `explorer_api` | the API program | `explorer`, and `explorer_models_local` only as an optional extra |
 | `explorer_batch` | the batch tools | `explorer`, and `explorer_models_local` and `explorer_map` only as optional extras |
 | `explorer_eval` | the evaluation tool | `explorer`, and `explorer_models_local` only as an optional extra |
-| `explorer_dspace` | plugin: the whole search delegated to the search of DSpace | `explorer` |
-| `explorer_sparse` | plugin: a candidate source over learned sparse token weights from any SparseEncoder, with its own index | `explorer` |
 
-The core never imports torch. Programs reach the in-process adapters and the plugins only
-through the registry. The registry finds them by Python entry points, a standard way for
-an installed package to announce its classes, so nothing depends on a plugin. Which
-plugins a program has is a matter of installation: the development environment installs
-all of them, a deployment image lists the ones its setups need. Plugins may import only
-the public module `explorer.plugin`, and `explorer.testing` in their tests. The web UI is a separate TypeScript application, outside the workspace, with
+The core never imports torch. Programs reach the in-process adapters only through the
+registry. `explorer_models_local` announces them by a Python entry point, a standard way
+for an installed package to announce its classes, so no package imports it and a program
+installed without it still starts. The web UI is a separate TypeScript application, outside the workspace, with
 an API client generated from the OpenAPI specification.
 
 ## 4. Components
@@ -153,11 +149,7 @@ endpoints. The evaluation therefore measures the same code that serves users.
 
 ![Components of the search in the API](diagrams/components-search.svg)
 
-Dashed boxes are plugins: separate packages that announce themselves to the registry, and
-the core does not depend on them. The box Plugin steps stands for the steps of all
-installed plugins, and the first of them is the sparse source in `explorer_sparse`. The
-DSpace searcher is drawn as itself, because the assignment asks for a comparison with the
-search of DSpace. To stay readable, the view leaves out two arrows to the database. The
+To stay readable, the view leaves out two arrows to the database. The
 setup loader reads the index manifests when the API starts and then every few minutes, and
 the platform wrapper reads and writes its result cache in the schema `cache`.
 
@@ -165,16 +157,15 @@ the platform wrapper reads and writes its result cache in the schema `cache`.
 | --- | --- | --- |
 | Search endpoints | REST endpoints for search and for the chunks that show why a thesis was found. Behind a login for maintainers also the list of setups, the choice of a setup and the trace. Everyone else gets the default setup | `explorer_api` |
 | Setup loader | reads the setup files when the API starts, checks them against the registry and the index manifests, and builds one searcher per setup. It refuses a setup whose index build is missing or whose query encoder does not match the index manifest. It reads the manifests again every few minutes | `explorer` |
-| Registry | names of searchers, steps, model adapters and the other replaceable parts of the core, each with a version. It finds plugins by entry points | `explorer` |
+| Registry | names of searchers, steps, index builders, model adapters and the other replaceable parts of the core, each with a version | `explorer` |
 | Platform wrapper | runs around every searcher: the query safety check, the query analysis, filters the searcher lacks, the visibility guard, chunks on request, the trace and a result cache for a few minutes | `explorer` |
 | Query safety check | stops or limits a query that looks for problematic places in theses, such as personal data. It is a set of small checks chosen by configuration | `explorer` |
 | Visibility guard | drops theses the catalog does not list as public now, chunks of older versions of a thesis, and body chunks of a thesis whose text is no longer public | `explorer` |
 | PipelineSearcher | the default searcher. It runs the step tree of a setup | `explorer` |
 | Query analyzer | turns the query text and the language of the UI into a query: its language with a confidence or no language, lemmas, embeddings. It computes only the embeddings the setup needs | `explorer` |
-| Candidate sources | leaf steps: dense vectors, a lexical index or metadata chunks of one index build, or another searcher | `explorer` |
+| Candidate sources | leaf steps: dense vectors, a lexical index, metadata chunks or learned sparse token weights of one index build, or another searcher. A source that needs another form of the query than the analyzer gives, such as sparse weights, gets it from the model adapters itself | `explorer` |
 | Ranking steps | fusion, aggregation, passage selection, reranking, filters and routers | `explorer` |
-| Plugin steps | steps from installed plugins, anywhere in the tree: candidate sources with their own index, fusions, rerankers, routers. The first one is the sparse source, a candidate source over learned sparse token weights from any SparseEncoder | plugin packages, first `explorer_sparse` |
-| DSpace searcher | plugin: the whole search delegated to the search of DSpace. Searchers from other plugins take the same place | `explorer_dspace` |
+| DSpace searcher | the whole search delegated to the search of DSpace. Other searchers take the same place | `explorer` |
 | Model adapters | HTTP adapters of EmbeddingProvider, SparseEncoder and Reranker, which call the model server | `explorer` |
 
 #### Searcher and platform wrapper
@@ -215,8 +206,8 @@ otherwise put such content together into one answer (section 4.3).
 
 A searcher with its own index has to remove a thesis from that index too, so that
 a withdrawn thesis disappears everywhere. A new model that does the whole search, such as
-another search engine or a model with its own index, is one searcher class in a plugin,
-optionally with an index builder, registered under a name. The API, the web UI and the
+another search engine or a model with its own index, is one searcher class, optionally
+with an index builder, registered under a name. The API, the web UI and the
 evaluation tool stay unchanged.
 
 #### Step tree
@@ -231,7 +222,7 @@ and its results can then be fused with others or reranked.
 
 | Step | Input | Output | Variants |
 | --- | --- | --- | --- |
-| candidate source | query | chunks or theses | dense vectors, lexical search (BM25) over lemmas, metadata chunks only, learned sparse weights (plugin), another searcher |
+| candidate source | query | chunks or theses | dense vectors, lexical search (BM25) over lemmas, metadata chunks only, learned sparse weights with their own index, another searcher |
 | fusion | several lists | one list | weighted RRF, weighted sum of normalized scores |
 | aggregation | chunks | theses | best chunk, sum or mean of the n best chunks |
 | passage selection | theses | theses with chunks | chunks of each thesis nearest to the query |
@@ -322,11 +313,10 @@ input = "reranked"
   A fallback setup without the reranker serves a node without a GPU.
 
 The registry maps names with a version, such as `fuse.rrf.v1`, to searchers, steps and
-model adapters. The core registers its own. A plugin announces its classes through an
-entry point. Setups refer to names, never to import paths, so adding a plugin changes
-nothing in the core. A plugin may add any kind of step. The sparse source is a leaf
-because it brings candidates from its own index, and a plugin can as well add a fusion,
-a reranker or a router inside the tree.
+model adapters. Index builders have names in the registry too. Setups and index specs
+refer to names, never to import paths. A new searcher, step or index builder is a new
+class in a module of its own, registered under a name, so the existing code changes only
+by that registration.
 
 #### Language
 
@@ -394,9 +384,8 @@ chunks do not depend on a model, and each index spec embeds them with its own mo
 | Catalog | the only writer of the schema `catalog`: versions of theses, metadata, access status, supervisors, twin groups, texts and the runs of batch commands | `explorer` |
 | Text extraction | takes the text file that DSpace makes from the PDF, or extracts the text from the public PDF where that file is missing or empty. It cleans abstracts and takes the abstract from the text where the metadata abstract is missing or cut | `explorer` |
 | Chunker | the only writer of chunks. It splits texts and metadata into the chunks of one chunking, detects the language of each chunk and deletes the chunks of versions that are gone | `explorer` |
-| Index builders | built-in builders of dense and lexical indexes. Each adds what changed since its last build and deletes its own entries of versions that are gone. The lexical builder lemmatizes each chunk with the lemmatizer of its language, the same one the query analyzer uses | `explorer` |
-| Plugin index builders | builders of the indexes that plugins bring, with the same contract | plugin packages, first `explorer_sparse` |
-| Cluster jobs | submit heavy jobs with their input to the cluster, fetch their results as files with manifests and import them: vectors and plugin indexes into index builds, map builds into artifacts | `explorer_batch` |
+| Index builders | builders of dense, lexical and sparse indexes. Each adds what changed since its last build and deletes its own entries of versions that are gone. The lexical builder lemmatizes each chunk with the lemmatizer of its language, the same one the query analyzer uses | `explorer` |
+| Cluster jobs | submit heavy jobs with their input to the cluster, fetch their results as files with manifests and import them: full index builds through their builder, map builds into artifacts | `explorer_batch` |
 | Map builder | builds thesis vectors, the neighbor graph and the topic map (section 4.3), on the serving node or as a cluster job | `explorer_map` |
 | Model adapters | the same HTTP adapters as in the API, for the embeddings and sparse weights of new chunks | `explorer` |
 
@@ -471,7 +460,8 @@ The catalog also records:
 #### Index builds
 
 An index spec says what an index is built from: a chunking and an encoder (model,
-revision, prompt, dimension) or an analyzer. An index build is one built instance in its
+revision, prompt, dimension) or an analyzer. It names its builder by its name in the
+registry. An index build is one built instance in its
 own schema `index_<build>`, with a manifest: the spec, the model and its revision, the
 snapshot the build covers, counts, and where and when it was built.
 
@@ -499,10 +489,9 @@ Where builds run:
   its state per shard, so that a requeued job does not start again. It writes vectors with
   a manifest as files. The batch tools fetch them into file storage and import them, and
   the database on the serving node builds the vector index. A data directory is never
-  copied.
-- Plugin index builders keep the same contract. Their full builds run as cluster jobs too,
-  and the batch tools import the results into the index storage that the core gives the
-  plugin.
+  copied. A cluster job runs the full build of any builder, and the builder imports its
+  own result, so a new kind of index, such as sparse weights, needs no change of the
+  cluster jobs.
 - A map build runs on the serving node when it fits there, otherwise as a cluster job
   whose results the batch tools import into `artifacts`.
 
@@ -772,7 +761,7 @@ on MetaCentrum.
 | --- | --- | --- | --- |
 | notebook of the maintainer | the programs for development and tests, with the models inside them, and evaluation on the corpus of an evaluation set | Docker Compose | the corpus of an evaluation set and its index builds |
 | serving node | the reverse proxy with the files of the web UI, the API, the model server, the database, file storage, the batch tools started by cron | Docker Compose ([0002](decisions/0002-containerization.md)) | the catalog, chunks, index builds, artifacts and caches |
-| MFF HPC cluster, or MetaCentrum | heavy jobs: bulk embeddings, map builds, evaluation runs at full scale, scaling tests. A job brings its own model server, and for scaling tests and full evaluations its own PostgreSQL | SLURM (PBS on MetaCentrum), the same images under Podman or Apptainer ([0005](decisions/0005-batch-jobs-on-the-faculty-cluster.md)) | chunks, vectors or index builds as files on the way in. Vectors, plugin indexes, map builds and evaluation results as files on the way out |
+| MFF HPC cluster, or MetaCentrum | heavy jobs: bulk embeddings, map builds, evaluation runs at full scale, scaling tests. A job brings its own model server, and for scaling tests and full evaluations its own PostgreSQL | SLURM (PBS on MetaCentrum), the same images under Podman or Apptainer ([0005](decisions/0005-batch-jobs-on-the-faculty-cluster.md)) | chunks, vectors or index builds as files on the way in. Vectors, sparse weights, map builds and evaluation results as files on the way out |
 
 - The cluster runs no service. Its jobs have time limits from 12 hours to 7 days and can
   be preempted, so every job continues where it stopped.
@@ -791,9 +780,8 @@ The deployment configuration names what a deployment serves: the default setup o
 fallback setup without the reranker, the map version the web UI shows, whether the
 overview runs, and where the models run (in process, our own model server, TEI or vLLM)
 with the revisions their adapters serve. The programs read it when they start, so
-a change takes effect with their restart. The plugins of a deployment come with its
-image, and the LLM with the configuration of the overview, of explanations and of the map
-build (chapter 8).
+a change takes effect with their restart. The LLM comes with the configuration of the
+overview, of explanations and of the map build (chapter 8).
 
 ### 6.3 Hardware for the whole university
 
@@ -842,20 +830,17 @@ What follows from the estimates:
 Concepts that more than one part of chapter 4 relies on. Each section collects the rules
 in one place and points to where the parts apply them.
 
-### 7.1 Plugins and registry
+### 7.1 Registry
 
 - The registry maps names with a version, such as `fuse.rrf.v1`, to searchers, steps,
   model adapters and the other replaceable parts of the core. Configuration refers to
   these names, never to import paths (section 4.1).
-- A plugin is a package of its own that announces its classes through an entry point. It
-  imports only the public module `explorer.plugin`, and `explorer.testing` in its tests.
-  Decision [0011](decisions/0011-direction-of-dependencies.md) checks the imports of its
-  code, not of its tests.
-- Which plugins a program has depends on its installation: the development environment
-  installs all of them, a deployment image lists the ones its setups need (chapter 3).
-- A plugin can bring a whole searcher, a step anywhere in the tree, or an index builder
-  with its own index storage. The core does not change when a plugin is
-  added (decision [0006](decisions/0006-search-core-with-replaceable-searchers.md)).
+- A new searcher, step, index builder or model adapter is a new class in a module of its
+  own, registered under a name. The existing code changes only by that registration
+  (decision [0006](decisions/0006-search-core-with-replaceable-searchers.md)).
+- `explorer_models_local` announces its in-process adapters to the registry by an entry
+  point, so the core and the programs never import it and run without torch (decision
+  [0004](decisions/0004-models-at-query-time.md)).
 
 ### 7.2 Versions, snapshots and fingerprints
 
@@ -963,20 +948,21 @@ bound:
 - configuration: a file of the repository, such as a setup, an index spec, a chunking, or
   the configuration of the overview, of explanations or of a map build. `setups check`
   checks setups,
-- deployment: the deployment configuration and the plugins installed in an image,
-- code: a new class, in a plugin or in the core, that the registry knows under a name.
+- deployment: the deployment configuration,
+- code: a new class that the registry knows under a name.
 
 No variant is implemented yet. The table lists the variants of the first implementation,
 and "later" marks those that the design only allows. The last column names the tactic of
 modifiability that keeps a change in one place: encapsulation (the variants hide behind
-one interface), restricted dependencies (plugins import only `explorer.plugin`, checked as
-decision [0011](decisions/0011-direction-of-dependencies.md) says) and deferred binding
+one interface), restricted dependencies (the core never imports torch, and its
+subpackages form layers, checked as decision
+[0011](decisions/0011-direction-of-dependencies.md) says) and deferred binding
 (configuration chooses a variant by its name, the code does not).
 
 | Point of variation | Interface | Variants | Bound at | Cost of a new variant | Tactic |
 | --- | --- | --- | --- | --- | --- |
-| whole search | Searcher | PipelineSearcher, DSpace searcher, later another engine or a model with its own index | code, then configuration | one searcher class in a plugin, optionally an index builder, and a setup | encapsulation, restricted dependencies, deferred binding |
-| candidate source | Step | dense vectors, lexical (BM25) over lemmas, metadata chunks only, learned sparse weights (plugin), another searcher | configuration, a new kind in code | a step class and an index builder, in a plugin for a source with its own index, then an index build and a setup | encapsulation, restricted dependencies, deferred binding |
+| whole search | Searcher | PipelineSearcher, DSpace searcher, later another engine or a model with its own index | code, then configuration | one searcher class, optionally an index builder, and a setup | encapsulation, restricted dependencies, deferred binding |
+| candidate source | Step | dense vectors, lexical (BM25) over lemmas, metadata chunks only, learned sparse weights, another searcher | configuration, a new kind in code | a step class, for a source with its own index also an index builder, then an index build and a setup | encapsulation, restricted dependencies, deferred binding |
 | other steps | Step | fusion (weighted RRF, weighted sum of normalized scores, how a missed and a blind branch count), aggregation (best chunk, sum or mean of the n best chunks), passage selection, filter, router | configuration, a new method in code | one step class and a setup | encapsulation, deferred binding |
 | weights, depths, chunks per thesis | setup | any value | configuration | a new setup file, no new index build | deferred binding |
 | query analysis | QueryAnalyzer | Czech, Slovak or English with a confidence, or no language, later translation of the query as a step | configuration, a new language in code | a lemmatizer and a change of the analyzer for a new language | encapsulation |
@@ -1023,8 +1009,8 @@ other scenarios have the measure in their row.
 | --- | --- | --- | --- | --- | --- | --- |
 | S1 | maintainer | compares a new embedding model with the same chunking (Qwen3-Embedding-4B) | index spec, setup, index builds | development, the full build on the cluster | a new index spec and setup, an index build, an evaluation run | no line of code. The model gives 2,560 dimensions, more than pgvector indexes in full precision (2,000), so the dense builder has to store vectors in half precision (halfvec, up to 4,000). The storage decision still has to confirm that |
 | S2 | maintainer | tries another cross-encoder as reranker | setup | development | a new setup and an evaluation run | one new setup file, no line of code. In operation the model server also loads the model |
-| S3 | maintainer | adds a whole search: the search of DSpace | plugin `explorer_dspace` | development | a searcher class in the plugin, registered under a name, and a setup that uses it | outside the plugin only the setup, the lock file and the list of plugins of the image change. Changes of `explorer.plugin` are counted separately |
-| S4 | maintainer | adds a candidate source with its own index: learned sparse weights | plugin `explorer_sparse`, index storage | development, the full build on the cluster | a step class and an index builder in the plugin, an index build, a setup | as in S3 |
+| S3 | maintainer | adds a whole search: the search of DSpace | search core | development | a searcher class in a new module, registered under a name, and a setup that uses it | new files and the registration of the new class, no other existing file changes |
+| S4 | maintainer | adds a candidate source with its own index: learned sparse weights | search core, index builders | development, the full build on the cluster | a step class and an index builder in new modules, an index build, a setup | as in S3 |
 | S5 | maintainer | compares two setups | evaluation tool | development, a frozen version of the evaluation set | `eval run` with both setups writes their TREC runs and results files and scores them | one command, shared steps run once |
 | S6 | DSpace | withdraws a thesis, corrects it or locks its text | catalog, index builds, caches, topic map | operation | a withdrawn thesis is no longer found or shown: search, overview, explanations, map, neighbors. A corrected thesis shows only in its new version. A locked text is no longer found or quoted, the thesis stays findable by its metadata and leaves the map | hidden within X hours after the change in DSpace, deleted within Y, and backups included or not. X, Y and the backups wait for the supervisor (section 4.2) |
 | S7 | maintainer | switches the overview to another LLM | configuration of the overview | development or operation | the overview uses the new model, cached overviews of the old configuration are no longer served | no line of code, the fingerprint of the overview changes |
@@ -1040,7 +1026,7 @@ other scenarios have the measure in their row.
 | [0003](decisions/0003-engineering-quality.md) | engineering quality and its enforcement |
 | [0004](decisions/0004-models-at-query-time.md) | models behind interfaces, adapters in process or over HTTP, one model server for all programs in deployment |
 | [0005](decisions/0005-batch-jobs-on-the-faculty-cluster.md) | heavy batch jobs on the faculty cluster, results come back as files |
-| [0006](decisions/0006-search-core-with-replaceable-searchers.md) | a whole search behind the searcher interface, the default searcher as a tree of steps from a TOML setup, plugins through the registry |
+| [0006](decisions/0006-search-core-with-replaceable-searchers.md) | a whole search behind the searcher interface, the default searcher as a tree of steps from a TOML setup, new parts as named classes in the registry |
 | [0007](decisions/0007-language-handling.md) | the language of each chunk from its text, Czech, Slovak and English as full languages, queries with no language, the default handling of the lexical branch left to the evaluation |
 
 Numbers up to 0009 are reserved for architecture decisions. Planned: storage at full
@@ -1070,9 +1056,7 @@ These are working names, the final naming is still open.
 | Visibility guard | drops from every result what is not public now: withdrawn theses, chunks of older versions, body chunks of theses whose text was locked |
 | Trace | the record of what each step returned and how long it took |
 | Index spec, index build | what an index is built from (a chunking, an encoder or analyzer) and one built instance, recorded with an index manifest (model, revision, snapshot, counts) |
-| Registry | the list of named searchers, steps, model adapters, the other replaceable parts of the core and plugins that a configuration can refer to |
-| Plugin | a separate package that adds a searcher, a step or an index to the registry without changes to the core |
-| Index storage | the schema `index_<build>` in PostgreSQL that the core gives a plugin for its own index |
+| Registry | the list of named searchers, steps, index builders, model adapters and the other replaceable parts of the core that a configuration can refer to |
 | Snapshot | the state of the catalog after one synchronization run |
 | SyncRun | one scheduled synchronization pass with its recorded outcome |
 | Twin group | records of one work: a recognized rigorous thesis with its original thesis, or the records of several attempts to defend one thesis |

@@ -7,8 +7,8 @@ Date: 2026-11-03. Status: accepted.
 Ruff formats the Python code and checks it against sets of rules. Until now nine sets
 applied to every file: pycodestyle, pyflakes, import order, naming, modern syntax,
 bugbear, simplifications and pathlib. They were chosen for the experiments. The
-application adds a database, HTTP calls to models and to DSpace, timestamps from the
-harvest and a public interface for plugins, and each of these has mistakes of its own.
+application adds a database, HTTP calls to models and to DSpace, and timestamps from the
+harvest, and each of these has mistakes of its own.
 
 The code in `eval/` already has a style: a docstring is one sentence that says what the
 function returns (`"""Share of the top k results that have a judgment of any grade."""`),
@@ -88,7 +88,7 @@ test names describe the behavior, and there are no TODO comments.
   Python 3.13.
 - **The NumPy or PEP 257 convention.** Both require the first line in the imperative
   mood, which several dozen docstrings in today's experiments do not use.
-- **Docstrings only in `explorer.plugin` and `explorer.testing`.** Less writing, but
+- **Docstrings only in the interfaces of the replaceable parts.** Less writing, but
   `CLAUDE.md` promises documented public interfaces for all of `libs/` and `apps/`.
 - **TODO with a link to an issue (ruff `TD`).** The plan or the issue already holds the
   work, and the link in the code would only repeat it.

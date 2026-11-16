@@ -1,6 +1,6 @@
 # 0006: Search core with replaceable searchers
 
-Date: 2026-11-03. Status: accepted.
+Date: 2026-11-03, plugins dropped on 2026-11-16. Status: accepted.
 
 ## Context
 
@@ -54,9 +54,10 @@ the steps inside the default searcher, PipelineSearcher.
 - **Fingerprint.** A hash of the normalized setup and the ids of its index builds with
   their snapshots. The results files of TREC runs and the caches of results and overviews
   record it, so a file changed under the same name never passes for the old one.
-- **Registry.** It maps names with a version, such as `fuse.rrf.v1`, to searchers, steps
-  and model adapters. A plugin announces its classes through an entry point and imports
-  from `explorer` only `explorer.plugin`. Setups refer to names, never to import paths.
+- **Registry.** It maps names with a version, such as `fuse.rrf.v1`, to searchers, steps,
+  index builders and model adapters. Setups and index specs refer to names, never to
+  import paths. A new searcher, step or index builder is a new class in a module of its
+  own, and only its registration changes existing code.
 - **Evaluation.** The evaluation tool runs the same library as the API and calls the
   platform wrapper directly. From the trace it measures each step: how many of the theses
   sought are in the top 50 before the reranker, and how long each step takes. Setups
@@ -64,9 +65,9 @@ the steps inside the default searcher, PipelineSearcher.
 
 ## Consequences
 
-- A whole search is one searcher class in a plugin, optionally with an index builder, and
-  the API, the web UI and the evaluation tool stay unchanged. `explorer_dspace` delegates
-  the search to DSpace, `explorer_sparse` adds a candidate source with its own index, and
+- A whole search is one searcher class, optionally with an index builder, and the API,
+  the web UI and the evaluation tool stay unchanged. The DSpace searcher delegates the
+  search to DSpace, the sparse source adds a candidate source with its own index, and
   Qwen3-Embedding-4B needs only configuration and a new index build.
 - A searcher without filters has to return more results than asked for. How many more is
   not decided.
@@ -75,8 +76,10 @@ the steps inside the default searcher, PipelineSearcher.
 - The API serves only setups whose index builds and models are deployed, and each model
   takes memory (decision 0004: BGE-M3 and the reranker about 2.3 GB each in full
   precision). Only maintainers choose another setup or ask for a trace, behind a login.
-- Everything a plugin needs has to be in `explorer.plugin`, and a change there reaches
-  every plugin. Decision 0011 checks the imports.
+- A new class in the core is bound only by the layers of the core (decision 0011), so it
+  can import more than the interfaces it implements. The scenarios of replaceability
+  therefore show that no existing file changes, not that a new class uses only the
+  interfaces.
 - Experiment 06 is postponed and will run as setups in the new core. The default fusion,
   the size of chunks and the place of the reranker stay open until then.
 
@@ -94,4 +97,10 @@ the steps inside the default searcher, PipelineSearcher.
   needs no extra library in Python, and the experiments already use it.
 - **An external engine for the whole search,** such as OpenSearch beside PostgreSQL. It
   has a Czech analyzer (a light stemmer) but no Slovak one, and it is a second system with
-  a JVM and data to keep in sync. It can still join later as one searcher in a plugin.
+  a JVM and data to keep in sync. It can still join later as one searcher.
+- **Plugins,** separate packages that announce their classes through entry points and
+  import only a public module of the core. A test of their imports would prove that the
+  public interface is enough. Dropped on 2026-11-16 after the meeting with the supervisor:
+  the term mixed the place of replacement, the new class and its package, and it added
+  packages, a public module and a test that the system does not need. They can still
+  come later without changing the rest of the architecture.

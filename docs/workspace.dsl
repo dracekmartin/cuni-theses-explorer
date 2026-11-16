@@ -15,16 +15,15 @@ workspace "Theses Explorer" "Hybrid search, topic map and AI overview over the t
                 api = container "API" "Public REST API with the search core, overview and explanations as a library inside. Sends the topic map as one cached response per map version. Limits for expensive endpoints." "Python, FastAPI, explorer_api" {
                     endpoints = component "Search endpoints" "REST endpoints for search and for the chunks that show why a thesis was found. Behind a login for maintainers: the list of setups, the choice of a setup, the trace." "FastAPI, explorer_api"
                     loader = component "Setup loader" "Reads the setup files at start, checks them against the registry and the index manifests, builds one searcher per setup." "explorer"
-                    registry = component "Registry" "Named searchers, steps and model adapters with versions. Finds plugins by entry points." "explorer"
+                    registry = component "Registry" "Named searchers, steps, index builders and model adapters with versions." "explorer"
                     wrapper = component "Platform wrapper" "Runs around every searcher: query safety check, query analysis, filters the searcher lacks, visibility guard, chunks on request, trace, short result cache." "explorer"
                     safety = component "Query safety check" "Stops or limits a query that looks for problematic places in theses. Small checks chosen by configuration." "explorer"
                     guard = component "Visibility guard" "Drops theses that are not public now, chunks of older versions and body chunks of theses whose text was locked." "explorer"
                     pipeline = component "PipelineSearcher" "The default searcher. Runs the step tree of a setup." "explorer"
                     analyzer = component "Query analyzer" "Turns the query text into a query: language with confidence or no language, lemmas, embeddings." "explorer"
-                    sources = component "Candidate sources" "Leaf steps: dense vectors, a lexical index or metadata chunks of one index build, or another searcher." "explorer"
+                    sources = component "Candidate sources" "Leaf steps: dense vectors, a lexical index, metadata chunks or sparse token weights of one index build, or another searcher." "explorer"
                     ranking = component "Ranking steps" "Fusion, aggregation, passage selection, reranking, filters, routers." "explorer"
-                    pluginSteps = component "Plugin steps" "Steps from installed plugins, anywhere in the tree: candidate sources with their own index, fusions, rerankers, routers." "plugin packages" "Plugin"
-                    dspaceSearcher = component "DSpace searcher" "The whole search delegated to the search of DSpace. Searchers from other plugins take the same place." "explorer_dspace" "Plugin"
+                    dspaceSearcher = component "DSpace searcher" "The whole search delegated to the search of DSpace. Other searchers take the same place." "explorer"
                     adapters = component "Model adapters" "HTTP adapters of EmbeddingProvider, SparseEncoder and Reranker." "explorer"
                     answerEndpoints = component "Overview and map endpoints" "REST endpoints for the overview, the explanation of a neighbor edge, the topic map of one version and the neighbors of a thesis." "FastAPI, explorer_api"
                     overview = component "Overview" "Answers a question from the theses the search found: selects chunks, lets an LLM write an answer with citations, keeps only verified claims." "explorer"
@@ -37,7 +36,7 @@ workspace "Theses Explorer" "Hybrid search, topic map and AI overview over the t
             }
             group "Data" {
                 database = container "Database" "Catalog, chunks, indexes, map data and caches, one writer per schema." "PostgreSQL, pgvector" "Database"
-                files = container "File storage" "Results of cluster jobs (vectors, map builds) with their manifests, kept for a repeated import, and PDFs for own text extraction. Used only by the batch tools." "File system" "Database"
+                files = container "File storage" "Results of cluster jobs (index builds, map builds) with their manifests, kept for a repeated import, and PDFs for own text extraction. Used only by the batch tools." "File system" "Database"
             }
             group "Batch" {
                 batchTools = container "Batch tools" "Synchronization with DSpace, chunking, index builds and imports, map builds. Started by cron on the serving node, heavy jobs on the cluster (SLURM) or MetaCentrum (PBS)." "Python, explorer_batch" {
@@ -46,8 +45,7 @@ workspace "Theses Explorer" "Hybrid search, topic map and AI overview over the t
                     catalog = component "Catalog" "The only writer of the schema catalog: versions, metadata, access status, supervisors, twin groups, texts, runs of batch commands." "explorer"
                     extraction = component "Text extraction" "Takes the text file of DSpace, or extracts the text from the public PDF where that file is missing or empty. Cleans abstracts." "explorer"
                     chunker = component "Chunker" "The only writer of chunks. Splits texts and metadata into the chunks of one chunking and detects the language of each chunk." "explorer"
-                    builders = component "Index builders" "Built-in builders of dense and lexical indexes. Each adds what changed since its last build and deletes its entries of versions that are gone." "explorer"
-                    pluginBuilders = component "Plugin index builders" "Builders of the indexes that plugins bring, with the same contract." "plugin packages" "Plugin"
+                    builders = component "Index builders" "Builders of dense, lexical and sparse indexes. Each adds what changed since its last build and deletes its entries of versions that are gone." "explorer"
                     jobs = component "Cluster jobs" "Submit heavy jobs with their input, fetch their results as files with manifests, import them into the database." "explorer_batch"
                     mapBuilder = component "Map builder" "Builds thesis vectors, the neighbor graph and the topic map, on the serving node or as a cluster job." "explorer_map"
                     adapters = component "Model adapters" "The same HTTP adapters as in the API, for the embeddings and sparse weights of new chunks." "explorer"
@@ -100,14 +98,12 @@ workspace "Theses Explorer" "Hybrid search, topic map and AI overview over the t
         explorer.api.wrapper -> explorer.api.ranking "Selects chunks of a thesis on request"
         explorer.api.wrapper -> explorer.database "Caches results for a few minutes" "SQL"
         explorer.api.guard -> explorer.database "Reads access status and versions" "SQL"
-        explorer.api.pipeline -> explorer.api.sources "Runs built-in leaf steps"
-        explorer.api.pipeline -> explorer.api.pluginSteps "Runs them like built-in steps"
+        explorer.api.pipeline -> explorer.api.sources "Runs the leaf steps"
         explorer.api.pipeline -> explorer.api.ranking "Runs the inner steps"
         explorer.api.analyzer -> explorer.api.adapters "Embeds the query"
         explorer.api.sources -> explorer.database "Searches index builds" "SQL"
         explorer.api.sources -> explorer.api.dspaceSearcher "Runs another searcher as a leaf"
-        explorer.api.pluginSteps -> explorer.database "Search their index storage" "SQL"
-        explorer.api.pluginSteps -> explorer.api.adapters "Call the models they need"
+        explorer.api.sources -> explorer.api.adapters "Gets sparse weights of the query"
         explorer.api.ranking -> explorer.database "Reads chunks for passage selection" "SQL"
         explorer.api.ranking -> explorer.api.adapters "Reranks candidates"
         explorer.api.adapters -> explorer.modelServer "Calls the models" "HTTP"
@@ -132,7 +128,6 @@ workspace "Theses Explorer" "Hybrid search, topic map and AI overview over the t
         explorer.batchTools.commands -> explorer.batchTools.extraction "Runs text extraction"
         explorer.batchTools.commands -> explorer.batchTools.chunker "Runs chunking"
         explorer.batchTools.commands -> explorer.batchTools.builders "Runs index builds and updates"
-        explorer.batchTools.commands -> explorer.batchTools.pluginBuilders "Runs them like built-in builders"
         explorer.batchTools.commands -> explorer.batchTools.jobs "Submits heavy jobs, imports their results"
         explorer.batchTools.commands -> explorer.batchTools.mapBuilder "Runs map builds"
         explorer.batchTools.harvester -> dspace "Harvests changed records, checks for withdrawn ones" "OAI-PMH, HTTPS"
@@ -144,12 +139,10 @@ workspace "Theses Explorer" "Hybrid search, topic map and AI overview over the t
         explorer.batchTools.chunker -> explorer.database "Reads texts of changed versions, writes and deletes chunks" "SQL"
         explorer.batchTools.builders -> explorer.database "Reads changes and chunks, writes index builds" "SQL"
         explorer.batchTools.builders -> explorer.batchTools.adapters "Embeds chunks"
-        explorer.batchTools.pluginBuilders -> explorer.database "Read changes and chunks, write their index storage" "SQL"
-        explorer.batchTools.pluginBuilders -> explorer.batchTools.adapters "Call the models they need"
         explorer.batchTools.adapters -> explorer.modelServer "Calls the models" "HTTP"
         explorer.batchTools.jobs -> batch "Submits jobs, fetches their results" "SSH, SLURM or PBS"
         explorer.batchTools.jobs -> explorer.files "Stores results with manifests, reads them for import" "File system"
-        explorer.batchTools.jobs -> explorer.database "Imports vectors, plugin indexes and map builds" "SQL"
+        explorer.batchTools.jobs -> explorer.database "Imports full index builds and map builds" "SQL"
         explorer.batchTools.mapBuilder -> explorer.database "Reads chunk vectors, writes artifacts" "SQL"
         explorer.batchTools.mapBuilder -> einfra "Labels the clusters of the topic map" "HTTPS, OpenAI API"
         explorer.evalTool -> explorer.database "Runs setups against the indexes" "SQL"
@@ -240,7 +233,7 @@ workspace "Theses Explorer" "Hybrid search, topic map and AI overview over the t
         component explorer.api "components-search" {
             title "Components: search in the API"
             include explorer.proxy explorer.database explorer.modelServer dspace
-            include explorer.api.endpoints explorer.api.loader explorer.api.registry explorer.api.wrapper explorer.api.safety explorer.api.guard explorer.api.pipeline explorer.api.analyzer explorer.api.sources explorer.api.ranking explorer.api.pluginSteps explorer.api.dspaceSearcher explorer.api.adapters
+            include explorer.api.endpoints explorer.api.loader explorer.api.registry explorer.api.wrapper explorer.api.safety explorer.api.guard explorer.api.pipeline explorer.api.analyzer explorer.api.sources explorer.api.ranking explorer.api.dspaceSearcher explorer.api.adapters
             exclude "explorer.api.loader -> explorer.database"
             exclude "explorer.api.wrapper -> explorer.database"
             autoLayout lr
@@ -266,7 +259,7 @@ workspace "Theses Explorer" "Hybrid search, topic map and AI overview over the t
         component explorer.batchTools "components-index" {
             title "Components: embeddings, index and map builds"
             include maintainer explorer.database explorer.files explorer.modelServer einfra batch
-            include explorer.batchTools.commands explorer.batchTools.builders explorer.batchTools.pluginBuilders explorer.batchTools.jobs explorer.batchTools.mapBuilder explorer.batchTools.adapters
+            include explorer.batchTools.commands explorer.batchTools.builders explorer.batchTools.jobs explorer.batchTools.mapBuilder explorer.batchTools.adapters
             autoLayout lr
         }
 
@@ -395,10 +388,6 @@ workspace "Theses Explorer" "Hybrid search, topic map and AI overview over the t
             element "Component" {
                 background #85bbf0
                 color #000000
-            }
-            element "Plugin" {
-                background #c9e1f7
-                border dashed
             }
             element "Database" {
                 shape Cylinder
