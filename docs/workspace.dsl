@@ -52,6 +52,12 @@ workspace "Theses Explorer" "Hybrid search, topic map and AI overview over the t
                 }
                 evalTool = container "Evaluation tool" "Runs setups over an evaluation set on the notebook or as a job on the cluster, writes TREC runs and scores them." "Python, explorer_eval"
             }
+            group "Configuration" {
+                setups = container "Setups" "Search setups: the step tree of a searcher, its parameters and index builds. A setup with a reported result is never edited." "TOML files in the repository" "Configuration"
+                indexSpecs = container "Index specs and chunkings" "What each index is built from: a chunking, an encoder or analyzer, and the name of its builder." "TOML files in the repository" "Configuration"
+                answerConfig = container "Overview, explanations and map builds" "Method, gates, LLM and prompts of the overview and of explanations, steps and parameters of map builds." "TOML files in the repository" "Configuration"
+                deployConfig = container "Deployment configuration" "What one deployment serves: the default and fallback setup, the map version, the overview on or off, where the models run." "TOML file, secrets in environment variables" "Configuration"
+            }
         }
         dspace = softwareSystem "DSpace UK" "Digital repository of Charles University, DSpace 6.4." "External"
         einfra = softwareSystem "e-INFRA CZ" "Academic OpenAI-compatible LLM API." "External"
@@ -85,11 +91,22 @@ workspace "Theses Explorer" "Hybrid search, topic map and AI overview over the t
         explorer.batchTools -> batch "Submits heavy jobs, fetches their results as files" "SSH, SLURM or PBS"
         explorer.batchTools -> einfra "Labels the clusters of the topic map" "HTTPS, OpenAI API"
         explorer.batchTools -> explorer.modelServer "Embeds new theses" "HTTP"
+        explorer.api -> explorer.deployConfig "Reads at start"
+        explorer.api -> explorer.setups "Reads and checks the setups it serves"
+        explorer.api -> explorer.answerConfig "Reads the configuration of the overview and explanations"
+        explorer.batchTools -> explorer.deployConfig "Reads at start"
+        explorer.batchTools -> explorer.indexSpecs "Builds the chunkings and indexes they describe"
+        explorer.batchTools -> explorer.answerConfig "Reads the configuration of map builds"
+        explorer.evalTool -> explorer.deployConfig "Reads at start"
+        explorer.evalTool -> explorer.setups "Runs the setups it is given"
+        explorer.modelServer -> explorer.deployConfig "Reads which models and revisions to serve"
         explorer.proxy -> explorer.api.endpoints "Forwards API requests" "HTTP"
         explorer.api.endpoints -> explorer.api.loader "Looks up the setup"
         explorer.api.endpoints -> explorer.api.wrapper "Runs the search, asks for chunks"
         explorer.api.loader -> explorer.api.registry "Resolves names of steps and searchers"
         explorer.api.loader -> explorer.database "Reads the manifests of index builds" "SQL"
+        explorer.api.loader -> explorer.setups "Reads and checks the setups"
+        explorer.api.loader -> explorer.deployConfig "Takes the default and the fallback setup"
         explorer.api.wrapper -> explorer.api.safety "Checks the query first"
         explorer.api.wrapper -> explorer.api.pipeline "Searches"
         explorer.api.wrapper -> explorer.api.dspaceSearcher "Searches"
@@ -117,6 +134,8 @@ workspace "Theses Explorer" "Hybrid search, topic map and AI overview over the t
         explorer.api.overview -> explorer.api.adapters "Scores chunks with the reranker"
         explorer.api.overview -> explorer.api.llmAdapters "Generates the answer, verifies claims"
         explorer.api.overview -> explorer.database "Caches overviews" "SQL"
+        explorer.api.overview -> explorer.answerConfig "Reads its method, gates and LLM"
+        explorer.api.explanations -> explorer.answerConfig "Reads its explainer and LLM"
         explorer.api.explanations -> explorer.api.llmAdapters "Generates and verifies explanations"
         explorer.api.explanations -> explorer.database "Reads chunk pairs, caches explanations" "SQL"
         explorer.api.mapReader -> explorer.database "Reads artifacts" "SQL"
@@ -139,6 +158,9 @@ workspace "Theses Explorer" "Hybrid search, topic map and AI overview over the t
         explorer.batchTools.chunker -> explorer.database "Reads texts of changed versions, writes and deletes chunks" "SQL"
         explorer.batchTools.builders -> explorer.database "Reads changes and chunks, writes index builds" "SQL"
         explorer.batchTools.builders -> explorer.batchTools.adapters "Embeds chunks"
+        explorer.batchTools.builders -> explorer.indexSpecs "Build what each index spec describes"
+        explorer.batchTools.chunker -> explorer.indexSpecs "Splits texts as each chunking describes"
+        explorer.batchTools.mapBuilder -> explorer.answerConfig "Reads the configuration of the map build"
         explorer.batchTools.adapters -> explorer.modelServer "Calls the models" "HTTP"
         explorer.batchTools.jobs -> batch "Submits jobs, fetches their results" "SSH, SLURM or PBS"
         explorer.batchTools.jobs -> explorer.files "Stores results with manifests, reads them for import" "File system"
@@ -211,6 +233,10 @@ workspace "Theses Explorer" "Hybrid search, topic map and AI overview over the t
             exclude "explorer.evalTool -> explorer.modelServer"
             exclude "explorer.batchTools -> einfra"
             exclude "explorer.evalTool -> einfra"
+            exclude "explorer.api -> explorer.deployConfig"
+            exclude "explorer.batchTools -> explorer.deployConfig"
+            exclude "explorer.evalTool -> explorer.deployConfig"
+            exclude "explorer.evalTool -> explorer.setups"
             autoLayout lr
         }
 
@@ -218,6 +244,7 @@ workspace "Theses Explorer" "Hybrid search, topic map and AI overview over the t
             title "Containers: serving queries"
             include user operator maintainer apiClient
             include explorer.webUi explorer.proxy explorer.api explorer.modelServer explorer.database
+            include explorer.setups explorer.answerConfig explorer.deployConfig
             include einfra dspace
             autoLayout lr
         }
@@ -226,13 +253,14 @@ workspace "Theses Explorer" "Hybrid search, topic map and AI overview over the t
             title "Containers: batch work"
             include maintainer
             include explorer.batchTools explorer.database explorer.files explorer.modelServer
+            include explorer.indexSpecs explorer.answerConfig explorer.deployConfig
             include dspace einfra batch
             autoLayout lr
         }
 
         component explorer.api "components-search" {
             title "Components: search in the API"
-            include explorer.proxy explorer.database explorer.modelServer dspace
+            include explorer.proxy explorer.database explorer.modelServer dspace explorer.setups explorer.deployConfig
             include explorer.api.endpoints explorer.api.loader explorer.api.registry explorer.api.wrapper explorer.api.safety explorer.api.guard explorer.api.pipeline explorer.api.analyzer explorer.api.sources explorer.api.ranking explorer.api.dspaceSearcher explorer.api.adapters
             exclude "explorer.api.loader -> explorer.database"
             exclude "explorer.api.wrapper -> explorer.database"
@@ -241,7 +269,7 @@ workspace "Theses Explorer" "Hybrid search, topic map and AI overview over the t
 
         component explorer.api "components-overview" {
             title "Components: overview, explanations and map in the API"
-            include explorer.proxy explorer.database explorer.modelServer einfra
+            include explorer.proxy explorer.database explorer.modelServer einfra explorer.answerConfig
             include explorer.api.answerEndpoints explorer.api.overview explorer.api.gates explorer.api.explanations explorer.api.mapReader explorer.api.llmAdapters explorer.api.wrapper explorer.api.guard explorer.api.adapters
             exclude "explorer.api.wrapper -> explorer.database"
             exclude "explorer.api.wrapper -> explorer.api.guard"
@@ -251,14 +279,14 @@ workspace "Theses Explorer" "Hybrid search, topic map and AI overview over the t
 
         component explorer.batchTools "components-sync" {
             title "Components: synchronization and texts"
-            include maintainer explorer.database explorer.files dspace
+            include maintainer explorer.database explorer.files dspace explorer.indexSpecs
             include explorer.batchTools.commands explorer.batchTools.harvester explorer.batchTools.catalog explorer.batchTools.extraction explorer.batchTools.chunker
             autoLayout lr
         }
 
         component explorer.batchTools "components-index" {
             title "Components: embeddings, index and map builds"
-            include maintainer explorer.database explorer.files explorer.modelServer einfra batch
+            include maintainer explorer.database explorer.files explorer.modelServer einfra batch explorer.indexSpecs explorer.answerConfig
             include explorer.batchTools.commands explorer.batchTools.builders explorer.batchTools.jobs explorer.batchTools.mapBuilder explorer.batchTools.adapters
             autoLayout lr
         }
@@ -267,6 +295,7 @@ workspace "Theses Explorer" "Hybrid search, topic map and AI overview over the t
             title "Containers: evaluation"
             include maintainer
             include explorer.evalTool explorer.database explorer.modelServer
+            include explorer.setups explorer.deployConfig
             include dspace einfra batch
             autoLayout lr
         }
@@ -381,9 +410,15 @@ workspace "Theses Explorer" "Hybrid search, topic map and AI overview over the t
                 background #1168bd
                 color #ffffff
             }
-            element "Container" {
+            // C4-PlantUML lets a style of the tag Container beat every other tag, so containers take the style of Element.
+            element "Element" {
                 background #438dd5
                 color #ffffff
+            }
+            element "Deployment Node" {
+                background #ffffff
+                color #444444
+                stroke #444444
             }
             element "Component" {
                 background #85bbf0
@@ -391,6 +426,11 @@ workspace "Theses Explorer" "Hybrid search, topic map and AI overview over the t
             }
             element "Database" {
                 shape Cylinder
+            }
+            element "Configuration" {
+                shape Folder
+                background #f2c14e
+                color #000000
             }
             element "External" {
                 background #999999

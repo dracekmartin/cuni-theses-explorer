@@ -69,11 +69,12 @@ Constraints:
 
 ![Containers overview](diagrams/containers.svg)
 
-The containers fall into three groups. The batch tools write the database, and the API
-reads it. File storage holds only what the batch tools bring in or work from. The overview
-shows every container and everyone outside the system, but leaves out some relations
-whose target already has another arrow. The three views below show every relation of
-one part of the system.
+The containers fall into four groups. The batch tools write the database, and the API
+reads it. File storage holds only what the batch tools bring in or work from. The yellow
+boxes are configuration: a change there changes what the system does without a change of
+code. The overview shows every container and everyone outside the system, but leaves out
+some relations whose target already has another arrow. The three views below show every
+relation of one part of the system.
 
 Serving queries:
 
@@ -97,6 +98,10 @@ Evaluation:
 | File storage | results of cluster jobs (index builds, map builds) with their manifests, kept for a repeated import, and PDFs for own text extraction. Only the batch tools use it | file system |
 | Batch tools | synchronization with DSpace, chunking, index builds and imports, map builds. Cron starts them on the serving node, heavy jobs run on the cluster (SLURM) or MetaCentrum (PBS) ([0005](decisions/0005-batch-jobs-on-the-faculty-cluster.md)) | Python |
 | Evaluation tool | runs setups over an evaluation set on the notebook or as a job on the cluster, writes TREC runs and scores them | Python |
+| Setups | search setups: the step tree of a searcher, its parameters and index builds (section 4.1) | TOML files in the repository |
+| Index specs and chunkings | what each index is built from and with which builder (section 4.2) | TOML files in the repository |
+| Overview, explanations and map builds | method, gates, LLM and prompts of the overview and of explanations, steps and parameters of map builds (section 4.3) | TOML files in the repository |
+| Deployment configuration | what one deployment serves (section 6.2) | TOML file, secrets in environment variables ([0016](decisions/0016-configuration-and-commands.md)) |
 
 Each schema of the database has one writer:
 
