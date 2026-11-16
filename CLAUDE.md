@@ -58,6 +58,11 @@ and ideation documents live in the sibling repo `dracekmartin/diplomkaManagement
   `typings/` when several modules use the library, or as the last resort keep the calls
   in one module that turns off the unknown-type reports at its top with a reason. Its
   public functions take and return typed values (decision 0013).
+- **Docstrings and comments:** a docstring starts with one sentence, on a single line, on
+  what the function returns or does. `Args`, `Returns` and `Raises` only where the name
+  and the type do not say enough. A comment is one line and says why. A leading
+  underscore marks what is internal to its package, and other packages do not import it
+  (decision 0012).
 
 ## Quality gates
 
