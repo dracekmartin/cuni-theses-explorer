@@ -55,10 +55,9 @@ convention = "google"
     "RUF", "C4", "PIE", "PERF", "DTZ", "PT", "ARG", "A", "BLE", "PLE", "PLW", "PGH", "ERA",
     "T20", "S", "FBT", "INP", "NPY", "FAST", "ASYNC", "ANN401", "D", "FIX", "TRY",
 ]
-# Tests use plain assert and describe themselves by their names. Test folders and tools/
-# are not packages.
+# Tests use plain assert and describe themselves by their names. Test folders are not
+# packages.
 "**/tests/**" = ["S101", "INP001", "D"]
-"tools/**" = ["S101", "INP001", "D"]
 
 [tool.basedpyright]
 pythonVersion = "3.13"
@@ -76,7 +75,7 @@ reportIgnoreCommentWithoutRule = "error"
 reportUnnecessaryTypeIgnoreComment = "error"
 
 [tool.pytest.ini_options]
-testpaths = ["experiments", "eval", "tools", "libs", "apps"]
+testpaths = ["experiments", "eval", "libs", "apps"]
 # importlib lets test files in different packages share a name.
 addopts = "-q --import-mode=importlib"
 
@@ -135,7 +134,7 @@ experiments = [
 ]
 
 # Layers inside explorer, following the architecture. deptry checks the dependencies between
-# packages against their pyproject.toml, tools/test_plugin_imports.py checks the plugins.
+# packages against their pyproject.toml.
 # An exception in ignore_imports needs a comment with the reason.
 [tool.importlinter]
 root_packages = ["explorer"]
@@ -147,8 +146,6 @@ containers = ["explorer"]
 # A new subpackage fails the check until it is placed in a layer.
 exhaustive = true
 layers = [
-    "testing",
-    "plugin",
     # Nothing in explorer imports the adapters, the registry finds them by name.
     "adapters",
     "overview | explanations | maps",

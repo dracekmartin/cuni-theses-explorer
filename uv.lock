@@ -15,11 +15,9 @@ members = [
     "explorer",
     "explorer-api",
     "explorer-batch",
-    "explorer-dspace",
     "explorer-eval",
     "explorer-map",
     "explorer-models-local",
-    "explorer-sparse",
 ]
 default-groups = ["dev", "experiments"]
 
@@ -258,17 +256,6 @@ requires-dist = [
 provides-extras = ["local-models", "map"]
 
 [[package]]
-name = "explorer-dspace"
-version = "0.1.0"
-source = { editable = "libs/explorer-dspace" }
-dependencies = [
-    { name = "explorer" },
-]
-
-[package.metadata]
-requires-dist = [{ name = "explorer", editable = "libs/explorer" }]
-
-[[package]]
 name = "explorer-eval"
 version = "0.1.0"
 source = { editable = "apps/explorer-eval" }
@@ -303,17 +290,6 @@ requires-dist = [{ name = "explorer", editable = "libs/explorer" }]
 name = "explorer-models-local"
 version = "0.1.0"
 source = { editable = "libs/explorer-models-local" }
-dependencies = [
-    { name = "explorer" },
-]
-
-[package.metadata]
-requires-dist = [{ name = "explorer", editable = "libs/explorer" }]
-
-[[package]]
-name = "explorer-sparse"
-version = "0.1.0"
-source = { editable = "libs/explorer-sparse" }
 dependencies = [
     { name = "explorer" },
 ]

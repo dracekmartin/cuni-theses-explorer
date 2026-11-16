@@ -18,8 +18,8 @@ test names describe the behavior, and there are no TODO comments.
 
 - `ruff format` formats all Python code, with lines of at most 100 characters.
 - The nine sets stay for every file.
-- All code outside `experiments/` and `eval/` is checked by more sets: today `libs/`,
-  `apps/` and `tools/`, and any new folder too. Each set is listed with its reason in the
+- All code outside `experiments/` and `eval/` is checked by more sets: today `libs/` and
+  `apps/`, and any new folder too. Each set is listed with its reason in the
   root `pyproject.toml`:
   - `S` (security): SQL built from strings, HTTP calls without a timeout, `pickle`.
   - `DTZ`: dates and times without a time zone, which shift the comparison of harvest
@@ -42,7 +42,7 @@ test names describe the behavior, and there are no TODO comments.
   - `FIX`: `TODO`, `FIXME`, `XXX` and `HACK` comments. Unfinished work goes into the plan
     or an issue, not into the code.
 - Docstrings follow the Google convention. Every module, package, public class, function
-  and method outside `experiments/`, `eval/`, `tools/` and the tests has one, today in
+  and method outside `experiments/`, `eval/` and the tests has one, today in
   `libs/` and `apps/`. `__init__` (covered by the class docstring), magic methods and
   names with a leading underscore need none.
 - The first line of a docstring is one sentence that says what the function returns or
@@ -54,8 +54,8 @@ test names describe the behavior, and there are no TODO comments.
   package: other modules of the package may import it, other packages do not. Test names
   describe the behavior.
   Domain terms follow the Naming section of `CLAUDE.md`.
-- Tests may use `assert`. Test folders and `tools/` need no `__init__.py` and no
-  docstrings, because test names describe the behavior.
+- Tests may use `assert`. Test folders need no `__init__.py` and no docstrings, because
+  test names describe the behavior.
 - `experiments/` and `eval/` stay on the nine sets, as the lighter regime of decision
   0003. That decision says test code follows the same rules as the rest. The exceptions
   above for `assert`, `__init__.py` and docstrings are the only differences.

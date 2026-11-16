@@ -18,6 +18,6 @@ explorer-models-local = { workspace = true }
 requires = ["uv_build>=0.13.6,<0.14"]
 build-backend = "uv_build"
 
-# local-models only installs the plugin for the registry, so deptry rejects a direct import.
+# The registry finds the in-process adapters, so deptry rejects a direct import of local-models.
 [tool.deptry]
 optional_dependencies_dev_groups = ["local-models"]
