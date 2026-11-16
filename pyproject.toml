@@ -39,9 +39,11 @@ select = [
     "ANN401", # Any in a function signature
     "D",     # docstrings of modules, classes and public functions
     "FIX",   # TODO, FIXME, XXX and HACK comments
+    "TRY",   # raising and logging exceptions
 ]
-# The class docstring covers __init__, and magic methods need none.
-ignore = ["D105", "D107"]
+# The class docstring covers __init__, and magic methods need none. A message written
+# where the exception is raised reads better than one moved into its class.
+ignore = ["D105", "D107", "TRY003"]
 # Czech text uses en dashes in ranges and no-break spaces, RUF001 would report both.
 allowed-confusables = ["–", "\u00a0"]
 
@@ -51,7 +53,7 @@ convention = "google"
 [tool.ruff.lint.per-file-ignores]
 "{experiments,eval}/**" = [
     "RUF", "C4", "PIE", "PERF", "DTZ", "PT", "ARG", "A", "BLE", "PLE", "PLW", "PGH", "ERA",
-    "T20", "S", "FBT", "INP", "NPY", "FAST", "ASYNC", "ANN401", "D", "FIX",
+    "T20", "S", "FBT", "INP", "NPY", "FAST", "ASYNC", "ANN401", "D", "FIX", "TRY",
 ]
 # Tests use plain assert and describe themselves by their names. Test folders and tools/
 # are not packages.
