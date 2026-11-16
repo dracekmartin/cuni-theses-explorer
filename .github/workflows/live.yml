@@ -1,0 +1,36 @@
+name: Live services
+
+# Tests marked network call DSpace UK and e-INFRA once a week (decision 0021).
+on:
+  schedule:
+    - cron: "17 5 * * 1"
+  workflow_dispatch:
+
+jobs:
+  network:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v10.3.3
+
+      - name: Start the database for tests
+        run: docker compose up --wait test-db
+
+      - name: Install the workspace, the tools and the experiment dependencies
+        run: uv sync --all-packages --locked
+
+      - name: Tests against the real services
+        env:
+          EXPLORER_EINFRA_API_KEY: ${{ secrets.EXPLORER_EINFRA_API_KEY }}
+        run: |
+          set +e
+          uv run --no-sync pytest -m network --network
+          code=$?
+          # An empty run passes only until the first package of libs/ or apps/ calls HTTP.
+          if [ "$code" -eq 5 ] && ! grep -rqE '^\s*(import|from)\s+httpx' libs/*/src apps/*/src; then
+            echo "No HTTP adapter yet."
+            exit 0
+          fi
+          exit $code

@@ -35,10 +35,11 @@ jobs:
         run: uv run --no-sync lint-imports
 
       - name: Tests (pytest) with branch coverage
-        run: uv run --no-sync coverage run -m pytest -m "not model and not gpu" --durations=10
+        run: uv run --no-sync coverage run -m pytest -m "not model" --durations=10
 
+      # The job models reports explorer_models_local, which only its tests run.
       - name: Coverage of libs and apps
-        run: uv run --no-sync coverage report
+        run: uv run --no-sync coverage report --omit='libs/explorer-models-local/*'
 
   core-without-torch:
     runs-on: ubuntu-latest
@@ -47,6 +48,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: astral-sh/setup-uv@v10.3.3
+
+      - name: Start the database for tests
+        run: docker compose up --wait test-db
 
       - name: Install explorer alone, with the tools only
         run: uv sync --package explorer --no-default-groups --group dev --locked
@@ -62,13 +66,90 @@ jobs:
       - name: Tests of explorer
         run: |
           set +e
-          uv run --no-sync pytest libs/explorer -m "not db and not model and not gpu"
+          uv run --no-sync pytest libs/explorer -m "not model"
           code=$?
-          if [ "$code" -eq 5 ]; then
-            echo "No tests collected yet."
+          # An empty run passes only until the core has its first test (decision 0021).
+          if [ "$code" -eq 5 ] && [ -z "$(find libs/explorer -name 'test_*.py' -print -quit)" ]; then
+            echo "No tests of explorer yet."
             exit 0
           fi
           exit $code
+
+  models:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v10.3.3
+
+      - name: Start the database for tests
+        run: docker compose up --wait test-db
+
+      # The reference outputs name every model and revision that the tests load (decision 0021).
+      - name: Restore the models
+        id: models
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/huggingface/hub
+          key: models-${{ hashFiles('libs/explorer-models-local/src/explorer_models_local/reference_outputs/*') }}
+
+      - name: Install the workspace, the tools and the experiment dependencies
+        run: uv sync --all-packages --locked
+
+      # Before the tests, so the time limit of a test does not include a download.
+      - name: Download the models that the reference outputs name
+        if: steps.models.outputs.cache-hit != 'true' && hashFiles('libs/explorer-models-local/src/explorer_models_local/reference_outputs/*') != ''
+        run: uv run --no-sync python -m explorer_models_local.download
+
+      - name: Keep the models for the next run
+        if: steps.models.outputs.cache-hit != 'true' && hashFiles('libs/explorer-models-local/src/explorer_models_local/reference_outputs/*') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/huggingface/hub
+          key: models-${{ hashFiles('libs/explorer-models-local/src/explorer_models_local/reference_outputs/*') }}
+
+      - name: Tests with real models on the CPU
+        run: |
+          set +e
+          uv run --no-sync coverage run -m pytest -m model --durations=10
+          code=$?
+          # An empty run passes only until the first model has reference outputs.
+          if [ "$code" -eq 5 ] && [ ! -d libs/explorer-models-local/src/explorer_models_local/reference_outputs ]; then
+            echo "No model has reference outputs yet."
+            exit 0
+          fi
+          exit $code
+
+      - name: Coverage of explorer_models_local
+        run: uv run --no-sync coverage report --include='libs/explorer-models-local/*'
+
+  # The weekly live tests must not stop unnoticed, for example when GitHub turns the
+  # schedule off after 60 days without activity (decision 0021).
+  live-runs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      actions: read
+    steps:
+      - name: The live tests passed within the last 8 days
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          runs=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow live.yml --limit 1 --json databaseId --jq length)
+          if [ "$runs" -eq 0 ]; then
+            echo "live.yml has not run yet."
+            exit 0
+          fi
+          last=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow live.yml --status success --limit 1 --json createdAt --jq '.[0].createdAt // empty')
+          if [ -z "$last" ]; then
+            echo "live.yml has never passed."
+            exit 1
+          fi
+          if [ $(( $(date +%s) - $(date -d "$last" +%s) )) -gt $(( 8 * 86400 )) ]; then
+            echo "The last passing run of live.yml is from $last. Check that its schedule is on."
+            exit 1
+          fi
 
   commit-messages:
     runs-on: ubuntu-latest

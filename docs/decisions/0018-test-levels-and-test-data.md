@@ -1,7 +1,8 @@
 # 0018: Test levels and test data
 
 Date: 2026-11-16. Status: accepted. Since decision 0020 the main job of CI runs the tests
-marked `db` too.
+marked `db` too. Since decision 0021 the tests marked `model` run in CI on the CPU, and the
+marker `gpu` is gone.
 
 ## Context
 

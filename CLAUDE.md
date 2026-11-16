@@ -88,8 +88,8 @@ and ideation documents live in the sibling repo `dracekmartin/diplomkaManagement
 - **Test data:** only synthetic: ids `fake-…`, made-up names, sentences written by hand,
   never a real thesis. The fake encoder and the builders of test data live in
   `explorer.testing`, as plain code without pytest. A test that needs PostgreSQL is marked
-  `db`, one that loads a real model `model`, one that needs a GPU both `model` and `gpu`.
-  The name of a test describes the behavior it checks (decision 0018).
+  `db`, one that loads a real model `model`, and no test needs a GPU. The name of a test
+  describes the behavior it checks (decision 0018).
 - **Kinds of tests:** a pure function with a rule that holds for every input (fusion,
   fingerprint, chunking, metrics) also gets a property test with Hypothesis. The contract
   suite of each interface checks what every searcher, step, index builder or model adapter
@@ -101,6 +101,10 @@ and ideation documents live in the sibling repo `dracekmartin/diplomkaManagement
   with responses written by hand, never copied from DSpace or e-INFRA. A test that calls
   a real service is marked `network` and runs only with the option `--network` (decision
   0020).
+- **Models and rankings:** a program that uses a model checks the reference outputs of
+  `explorer_models_local` when it starts and exits with 78 when they differ. A change of
+  a ranking needs a new version of the step that causes it. A setup rewritten from
+  experiment 05 carries a passed regression with its fingerprint (decision 0021).
 
 ## Quality gates
 

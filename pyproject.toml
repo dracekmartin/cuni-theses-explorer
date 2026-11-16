@@ -93,8 +93,7 @@ addopts = ["-q", "--import-mode=importlib"]
 strict = true
 markers = [
     "db: needs PostgreSQL",
-    "model: loads a real model",
-    "gpu: needs a GPU, always together with model",
+    "model: loads a real model, runs in the CI job models on the CPU",
     "network: calls a real external service, runs only with --network (conftest.py)",
 ]
 # pytest-timeout stops a test after 120 s (decision 0019). The value has to be a string.
