@@ -1526,3 +1526,97 @@
 {"id": "topic-24-en", "group": "topic-24", "lang": "en", "type": "topic", "text": "dental caries in children", "target": null, "target_lang": null, "narrative": "Relevantní (2): zubní kaz u dětí: jak je častý, jak mu předcházet a jak ho léčit. Částečně relevantní (1): jiné nemoci zubů a úst u dětí, nebo zubní kaz u dospělých."}
 {"id": "topic-25-cs", "group": "topic-25", "lang": "cs", "type": "topic", "text": "léčba diabetu 2. typu", "target": null, "target_lang": null, "narrative": "Relevantní (2): léčba cukrovky 2. typu léky, dietou, pohybem nebo jinak, její komplikace a to, jak pacienti léčbu dodržují. Částečně relevantní (1): cukrovka 1. typu nebo těhotenská cukrovka, nebo obezita bez vztahu k léčbě cukrovky."}
 {"id": "topic-25-en", "group": "topic-25", "lang": "en", "type": "topic", "text": "treatment of type 2 diabetes", "target": null, "target_lang": null, "narrative": "Relevantní (2): léčba cukrovky 2. typu léky, dietou, pohybem nebo jinak, její komplikace a to, jak pacienti léčbu dodržují. Částečně relevantní (1): cukrovka 1. typu nebo těhotenská cukrovka, nebo obezita bez vztahu k léčbě cukrovky."}
+{"id": "ki-0001-exact-none", "group": "ki-0001-exact", "lang": null, "type": "exact", "text": "StromGVV", "target": "20.500.11956/184877", "target_lang": "cs", "narrative": null}
+{"id": "ki-0002-exact-none", "group": "ki-0002-exact", "lang": null, "type": "exact", "text": "École Colarossi", "target": "20.500.11956/14945", "target_lang": "cs", "narrative": null}
+{"id": "ki-0004-exact-en", "group": "ki-0004-exact", "lang": "en", "type": "exact", "text": "New Wye", "target": "20.500.11956/150400", "target_lang": "en", "narrative": null}
+{"id": "ki-0009-exact-none", "group": "ki-0009-exact", "lang": null, "type": "exact", "text": "R. A. Foty", "target": "20.500.11956/84627", "target_lang": "en", "narrative": null}
+{"id": "ki-0010-exact-none", "group": "ki-0010-exact", "lang": null, "type": "exact", "text": "JONAP", "target": "20.500.11956/187356", "target_lang": "en", "narrative": null}
+{"id": "ki-0012-exact-none", "group": "ki-0012-exact", "lang": null, "type": "exact", "text": "HMS Warspite", "target": "20.500.11956/123314", "target_lang": "cs", "narrative": null}
+{"id": "ki-0017-exact-none", "group": "ki-0017-exact", "lang": null, "type": "exact", "text": "Yvonne Fletcherová", "target": "20.500.11956/100418", "target_lang": "cs", "narrative": null}
+{"id": "ki-0019-exact-none", "group": "ki-0019-exact", "lang": null, "type": "exact", "text": "NIH BWP", "target": "20.500.11956/182159", "target_lang": "cs", "narrative": null}
+{"id": "ki-0020-exact-none", "group": "ki-0020-exact", "lang": null, "type": "exact", "text": "Union mondiale pour la nature", "target": "20.500.11956/107773", "target_lang": "cs", "narrative": null}
+{"id": "ki-0022-exact-none", "group": "ki-0022-exact", "lang": null, "type": "exact", "text": "MLFix", "target": "20.500.11956/82960", "target_lang": "en", "narrative": null}
+{"id": "ki-0023-exact-none", "group": "ki-0023-exact", "lang": null, "type": "exact", "text": "Dreamfarm", "target": "20.500.11956/211562", "target_lang": "cs", "narrative": null}
+{"id": "ki-0027-exact-none", "group": "ki-0027-exact", "lang": null, "type": "exact", "text": "Zicsr", "target": "20.500.11956/179630", "target_lang": "en", "narrative": null}
+{"id": "ki-0029-exact-none", "group": "ki-0029-exact", "lang": null, "type": "exact", "text": "Garcetti v. Ceballos", "target": "20.500.11956/40991", "target_lang": "cs", "narrative": null}
+{"id": "ki-0032-exact-en", "group": "ki-0032-exact", "lang": "en", "type": "exact", "text": "The Forsaken People", "target": "20.500.11956/70862", "target_lang": "sk", "narrative": null}
+{"id": "ki-0033-exact-en", "group": "ki-0033-exact", "lang": "en", "type": "exact", "text": "COVID Stress Scales", "target": "20.500.11956/181805", "target_lang": "cs", "narrative": null}
+{"id": "ki-0035-exact-none", "group": "ki-0035-exact", "lang": null, "type": "exact", "text": "SS-Standarte Kunesch", "target": "20.500.11956/94126", "target_lang": "cs", "narrative": null}
+{"id": "ki-0043-exact-none", "group": "ki-0043-exact", "lang": null, "type": "exact", "text": "FASTCLUS", "target": "20.500.11956/53391", "target_lang": "cs", "narrative": null}
+{"id": "ki-0044-exact-none", "group": "ki-0044-exact", "lang": null, "type": "exact", "text": "X2B-1200-6", "target": "20.500.11956/207626", "target_lang": "en", "narrative": null}
+{"id": "ki-0045-exact-none", "group": "ki-0045-exact", "lang": null, "type": "exact", "text": "Krevský hrad", "target": "20.500.11956/186063", "target_lang": "cs", "narrative": null}
+{"id": "ki-0047-exact-none", "group": "ki-0047-exact", "lang": null, "type": "exact", "text": "Apollo Block II", "target": "20.500.11956/46175", "target_lang": "en", "narrative": null}
+{"id": "ki-0048-exact-none", "group": "ki-0048-exact", "lang": null, "type": "exact", "text": "Southern Thule", "target": "20.500.11956/122185", "target_lang": "en", "narrative": null}
+{"id": "ki-0052-exact-cs", "group": "ki-0052-exact", "lang": "cs", "type": "exact", "text": "Devět zvláštních Doporučení FATF", "target": "20.500.11956/49000", "target_lang": "cs", "narrative": null}
+{"id": "ki-0055-exact-en", "group": "ki-0055-exact", "lang": "en", "type": "exact", "text": "Joint Goal Accuracy", "target": "20.500.11956/184050", "target_lang": "en", "narrative": null}
+{"id": "ki-0057-exact-none", "group": "ki-0057-exact", "lang": null, "type": "exact", "text": "Snyder Act of 1921", "target": "20.500.11956/34542", "target_lang": "en", "narrative": null}
+{"id": "ki-0059-exact-none", "group": "ki-0059-exact", "lang": null, "type": "exact", "text": "Databricks SQL", "target": "20.500.11956/184092", "target_lang": "en", "narrative": null}
+{"id": "ki-0061-exact-none", "group": "ki-0061-exact", "lang": null, "type": "exact", "text": "MovingAI MAPF benchmark suite", "target": "20.500.11956/199638", "target_lang": "en", "narrative": null}
+{"id": "ki-0062-exact-none", "group": "ki-0062-exact", "lang": null, "type": "exact", "text": "jpQOS", "target": "20.500.11956/8536", "target_lang": "en", "narrative": null}
+{"id": "ki-0063-exact-none", "group": "ki-0063-exact", "lang": null, "type": "exact", "text": "HindEnCorp1", "target": "20.500.11956/68934", "target_lang": "en", "narrative": null}
+{"id": "ki-0067-exact-none", "group": "ki-0067-exact", "lang": null, "type": "exact", "text": "IUniverseCommand", "target": "20.500.11956/176099", "target_lang": "sk", "narrative": null}
+{"id": "ki-0070-exact-none", "group": "ki-0070-exact", "lang": null, "type": "exact", "text": "hra Hex", "target": "20.500.11956/42045", "target_lang": "sk", "narrative": null}
+{"id": "ki-0071-exact-en", "group": "ki-0071-exact", "lang": "en", "type": "exact", "text": "W2C Builder", "target": "20.500.11956/49625", "target_lang": "en", "narrative": null}
+{"id": "ki-0072-exact-none", "group": "ki-0072-exact", "lang": null, "type": "exact", "text": "RPSLng", "target": "20.500.11956/83087", "target_lang": "en", "narrative": null}
+{"id": "ki-0076-exact-none", "group": "ki-0076-exact", "lang": null, "type": "exact", "text": "Signal of Reykjavik", "target": "20.500.11956/31874", "target_lang": "sk", "narrative": null}
+{"id": "ki-0077-exact-none", "group": "ki-0077-exact", "lang": null, "type": "exact", "text": "Salah Sheekh v. Holandsko", "target": "20.500.11956/87475", "target_lang": "sk", "narrative": null}
+{"id": "ki-0079-exact-none", "group": "ki-0079-exact", "lang": null, "type": "exact", "text": "Aeolian kvartetu", "target": "20.500.11956/3640", "target_lang": "cs", "narrative": null}
+{"id": "ki-0085-exact-none", "group": "ki-0085-exact", "lang": null, "type": "exact", "text": "6aKcHTb", "target": "20.500.11956/16516", "target_lang": "cs", "narrative": null}
+{"id": "ki-0086-exact-none", "group": "ki-0086-exact", "lang": null, "type": "exact", "text": "Giftschützem", "target": "20.500.11956/58136", "target_lang": "cs", "narrative": null}
+{"id": "ki-0094-exact-none", "group": "ki-0094-exact", "lang": null, "type": "exact", "text": "5,5'-dithiobis-2-nitrobenzoic acid", "target": "20.500.11956/87728", "target_lang": "cs", "narrative": null}
+{"id": "ki-0096-exact-none", "group": "ki-0096-exact", "lang": null, "type": "exact", "text": "Bekendtgørelse om elevers fravær fra undervisningen i folkeskolen", "target": "20.500.11956/196272", "target_lang": "cs", "narrative": null}
+{"id": "ki-0097-exact-none", "group": "ki-0097-exact", "lang": null, "type": "exact", "text": "Street Pastors", "target": "20.500.11956/99098", "target_lang": "cs", "narrative": null}
+{"id": "ki-0099-exact-cs", "group": "ki-0099-exact", "lang": "cs", "type": "exact", "text": "zákona o sjednocené tělesné výchově", "target": "20.500.11956/14064", "target_lang": "cs", "narrative": null}
+{"id": "ki-0100-exact-none", "group": "ki-0100-exact", "lang": null, "type": "exact", "text": "Pargoo", "target": "20.500.11956/210528", "target_lang": "cs", "narrative": null}
+{"id": "ki-0101-exact-cs", "group": "ki-0101-exact", "lang": "cs", "type": "exact", "text": "Velký Adršpašský vodopád", "target": "20.500.11956/120446", "target_lang": "cs", "narrative": null}
+{"id": "ki-0107-exact-cs", "group": "ki-0107-exact", "lang": "cs", "type": "exact", "text": "labská červenka", "target": "20.500.11956/106287", "target_lang": "cs", "narrative": null}
+{"id": "ki-0108-exact-cs", "group": "ki-0108-exact", "lang": "cs", "type": "exact", "text": "misál papeže Pavla VI.", "target": "20.500.11956/82689", "target_lang": "cs", "narrative": null}
+{"id": "ki-0109-exact-cs", "group": "ki-0109-exact", "lang": "cs", "type": "exact", "text": "PRISM III-12 skóre", "target": "20.500.11956/84701", "target_lang": "cs", "narrative": null}
+{"id": "ki-0109-exact-en", "group": "ki-0109-exact", "lang": "en", "type": "exact", "text": "PRISM III-12 score", "target": "20.500.11956/84701", "target_lang": "cs", "narrative": null}
+{"id": "ki-0114-exact-none", "group": "ki-0114-exact", "lang": null, "type": "exact", "text": "N-Ac-DEVD-N´-MC-R110", "target": "20.500.11956/52809", "target_lang": "cs", "narrative": null}
+{"id": "ki-0116-exact-none", "group": "ki-0116-exact", "lang": null, "type": "exact", "text": "microRNA 743", "target": "20.500.11956/61997", "target_lang": "cs", "narrative": null}
+{"id": "ki-0118-exact-none", "group": "ki-0118-exact", "lang": null, "type": "exact", "text": "Lord Twinning", "target": "20.500.11956/62430", "target_lang": "cs", "narrative": null}
+{"id": "ki-0122-exact-none", "group": "ki-0122-exact", "lang": null, "type": "exact", "text": "Laktat - Test ver. 6.0+", "target": "20.500.11956/22006", "target_lang": "cs", "narrative": null}
+{"id": "ki-0123-exact-none", "group": "ki-0123-exact", "lang": null, "type": "exact", "text": "Deraerocoris rutilus", "target": "20.500.11956/116597", "target_lang": "cs", "narrative": null}
+{"id": "ki-0126-exact-none", "group": "ki-0126-exact", "lang": null, "type": "exact", "text": "R1b-M343", "target": "20.500.11956/83845", "target_lang": "sk", "narrative": null}
+{"id": "ki-0127-exact-none", "group": "ki-0127-exact", "lang": null, "type": "exact", "text": "Tönniesovou", "target": "20.500.11956/150518", "target_lang": "cs", "narrative": null}
+{"id": "ki-0134-exact-cs", "group": "ki-0134-exact", "lang": "cs", "type": "exact", "text": "Piagetova teorie vývoje morálního usuzování", "target": "20.500.11956/125599", "target_lang": "cs", "narrative": null}
+{"id": "ki-0138-exact-none", "group": "ki-0138-exact", "lang": null, "type": "exact", "text": "Spartan Steel v. Martin", "target": "20.500.11956/35362", "target_lang": "cs", "narrative": null}
+{"id": "ki-0139-exact-cs", "group": "ki-0139-exact", "lang": "cs", "type": "exact", "text": "Vrstva oleje na vodě", "target": "20.500.11956/61782", "target_lang": "cs", "narrative": null}
+{"id": "ki-0142-exact-none", "group": "ki-0142-exact", "lang": null, "type": "exact", "text": "Rhizophagus irregularis PH5", "target": "20.500.11956/107660", "target_lang": "en", "narrative": null}
+{"id": "ki-0143-exact-none", "group": "ki-0143-exact", "lang": null, "type": "exact", "text": "Kristen Hastrup", "target": "20.500.11956/151376", "target_lang": "cs", "narrative": null}
+{"id": "ki-0144-exact-en", "group": "ki-0144-exact", "lang": "en", "type": "exact", "text": "Democracy Perception Index", "target": "20.500.11956/177617", "target_lang": "en", "narrative": null}
+{"id": "ki-0146-exact-none", "group": "ki-0146-exact", "lang": null, "type": "exact", "text": "GeoEye Foundation", "target": "20.500.11956/42741", "target_lang": "en", "narrative": null}
+{"id": "ki-0147-exact-none", "group": "ki-0147-exact", "lang": null, "type": "exact", "text": "IPathReport", "target": "20.500.11956/197421", "target_lang": "sk", "narrative": null}
+{"id": "ki-0148-exact-en", "group": "ki-0148-exact", "lang": "en", "type": "exact", "text": "Google/DoubleClick merger decision", "target": "20.500.11956/101318", "target_lang": "en", "narrative": null}
+{"id": "ki-0154-exact-none", "group": "ki-0154-exact", "lang": null, "type": "exact", "text": "Kseniya Boguslavskaya", "target": "20.500.11956/22450", "target_lang": "en", "narrative": null}
+{"id": "ki-0156-exact-none", "group": "ki-0156-exact", "lang": null, "type": "exact", "text": "Advomate", "target": "20.500.11956/203298", "target_lang": "en", "narrative": null}
+{"id": "ki-0157-exact-cs", "group": "ki-0157-exact", "lang": "cs", "type": "exact", "text": "Eight-Point Plan Čína", "target": "20.500.11956/72133", "target_lang": "en", "narrative": null}
+{"id": "ki-0157-exact-en", "group": "ki-0157-exact", "lang": "en", "type": "exact", "text": "Eight-Point Plan China", "target": "20.500.11956/72133", "target_lang": "en", "narrative": null}
+{"id": "ki-0160-exact-none", "group": "ki-0160-exact", "lang": null, "type": "exact", "text": "bocca group", "target": "20.500.11956/105529", "target_lang": "en", "narrative": null}
+{"id": "ki-0161-exact-cs", "group": "ki-0161-exact", "lang": "cs", "type": "exact", "text": "Quinta Fulvia Lippina Pompej", "target": "20.500.11956/33565", "target_lang": "sk", "narrative": null}
+{"id": "ki-0161-exact-en", "group": "ki-0161-exact", "lang": "en", "type": "exact", "text": "Quinta Fulvia Lippina Pompeii", "target": "20.500.11956/33565", "target_lang": "sk", "narrative": null}
+{"id": "ki-0162-exact-none", "group": "ki-0162-exact", "lang": null, "type": "exact", "text": "p.Ala503Val", "target": "20.500.11956/65496", "target_lang": "en", "narrative": null}
+{"id": "ki-0163-exact-none", "group": "ki-0163-exact", "lang": null, "type": "exact", "text": "al-Rasad", "target": "20.500.11956/52824", "target_lang": "sk", "narrative": null}
+{"id": "ki-0164-exact-none", "group": "ki-0164-exact", "lang": null, "type": "exact", "text": "GoldenEye: Source", "target": "20.500.11956/204518", "target_lang": "en", "narrative": null}
+{"id": "ki-0165-exact-sk", "group": "ki-0165-exact", "lang": "sk", "type": "exact", "text": "Sväz živnostenských úverných ústavov na Slovensku", "target": "20.500.11956/111276", "target_lang": "sk", "narrative": null}
+{"id": "ki-0166-exact-none", "group": "ki-0166-exact", "lang": null, "type": "exact", "text": "d-CerNS", "target": "20.500.11956/106841", "target_lang": "sk", "narrative": null}
+{"id": "ki-0167-exact-en", "group": "ki-0167-exact", "lang": "en", "type": "exact", "text": "Planar Monotone Rectilinear 3-SAT", "target": "20.500.11956/119401", "target_lang": "en", "narrative": null}
+{"id": "ki-0169-exact-none", "group": "ki-0169-exact", "lang": null, "type": "exact", "text": "canon 1055", "target": "20.500.11956/43202", "target_lang": "sk", "narrative": null}
+{"id": "ki-0170-exact-none", "group": "ki-0170-exact", "lang": null, "type": "exact", "text": "Qualisys Motion Tracking Manager", "target": "20.500.11956/117810", "target_lang": "en", "narrative": null}
+{"id": "ki-0172-exact-en", "group": "ki-0172-exact", "lang": "en", "type": "exact", "text": "nowhere-zero Petersen flow", "target": "20.500.11956/62014", "target_lang": "en", "narrative": null}
+{"id": "ki-0174-exact-none", "group": "ki-0174-exact", "lang": null, "type": "exact", "text": "SCID-RTE", "target": "20.500.11956/190419", "target_lang": "en", "narrative": null}
+{"id": "ki-0176-exact-en", "group": "ki-0176-exact", "lang": "en", "type": "exact", "text": "Interval Random Effects GLS", "target": "20.500.11956/170435", "target_lang": "en", "narrative": null}
+{"id": "ki-0178-exact-none", "group": "ki-0178-exact", "lang": null, "type": "exact", "text": "REMTH", "target": "20.500.11956/152557", "target_lang": "en", "narrative": null}
+{"id": "ki-0180-exact-none", "group": "ki-0180-exact", "lang": null, "type": "exact", "text": "kaverín", "target": "20.500.11956/174435", "target_lang": "sk", "narrative": null}
+{"id": "ki-0181-exact-none", "group": "ki-0181-exact", "lang": null, "type": "exact", "text": "ADTKD registry", "target": "20.500.11956/195620", "target_lang": "en", "narrative": null}
+{"id": "ki-0182-exact-none", "group": "ki-0182-exact", "lang": null, "type": "exact", "text": "SIRT1 inhibitor EX527", "target": "20.500.11956/54115", "target_lang": "en", "narrative": null}
+{"id": "ki-0186-exact-none", "group": "ki-0186-exact", "lang": null, "type": "exact", "text": "purpurealidin I", "target": "20.500.11956/98654", "target_lang": "en", "narrative": null}
+{"id": "ki-0187-exact-none", "group": "ki-0187-exact", "lang": null, "type": "exact", "text": "Kolionovo", "target": "20.500.11956/101725", "target_lang": "en", "narrative": null}
+{"id": "ki-0188-exact-en", "group": "ki-0188-exact", "lang": "en", "type": "exact", "text": "New Oriental Centers Distribution", "target": "20.500.11956/177091", "target_lang": "en", "narrative": null}
+{"id": "ki-0190-exact-none", "group": "ki-0190-exact", "lang": null, "type": "exact", "text": "Pasterstwo w Karpatach", "target": "20.500.11956/83965", "target_lang": "sk", "narrative": null}
+{"id": "ki-0192-exact-none", "group": "ki-0192-exact", "lang": null, "type": "exact", "text": "TEBDOL", "target": "20.500.11956/91769", "target_lang": "en", "narrative": null}
+{"id": "ki-0193-exact-en", "group": "ki-0193-exact", "lang": "en", "type": "exact", "text": "Shock and Disillusionment: Students Respond to the 1968 Soviet Invasion", "target": "20.500.11956/85070", "target_lang": "en", "narrative": null}
+{"id": "ki-0194-exact-none", "group": "ki-0194-exact", "lang": null, "type": "exact", "text": "Alt-R™ S.p. HiFi Cas9 Nuclease V3", "target": "20.500.11956/197128", "target_lang": "en", "narrative": null}
+{"id": "ki-0198-exact-none", "group": "ki-0198-exact", "lang": null, "type": "exact", "text": "Grounded-L", "target": "20.500.11956/193177", "target_lang": "en", "narrative": null}
+{"id": "ki-0200-exact-en", "group": "ki-0200-exact", "lang": "en", "type": "exact", "text": "formaldehyde hydrate", "target": "20.500.11956/81182", "target_lang": "en", "narrative": null}

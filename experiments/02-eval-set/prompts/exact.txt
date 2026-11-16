@@ -1,0 +1,27 @@
+Below is the metadata of one thesis and two passages from its body. Find terms a student could type to find exactly this thesis by an exact match: the name of a well-known person, a place, an organization or a work, a law or a court decision with its number, a code (a gene, a standard, a diagnosis, a software, a chemical compound), or an abbreviation.
+
+Rules:
+- Give up to five candidate terms, the most specific first. Prefer terms that are not in the title.
+- Copy each term exactly as it is written in the metadata or the passages.
+- The term must be specific: something only a few theses would mention. No general words or phrases.
+- No names of the author, the supervisor or other private persons (respondents, patients, interviewees, colleagues).
+- No citations of literature such as "Novák (2010)" or "Smith et al.".
+- No numbers that only the thesis uses: inventory, file, sample or page numbers, codes of texts in a corpus.
+- For each term write the query a student would type: the term alone, or the term and at most three other words.
+- "none": true when the query is the term alone and the term has no word of any language (a code, a number, an abbreviation, a name). Then give the query once as "query".
+- Otherwise "none": false and write the query in Czech ("cs"), English ("en") and Slovak ("sk"), with the term in each.
+- If the thesis has no such term, answer {"skip": true}.
+
+Answer with JSON only, in one of these forms:
+{"terms": [{"term": "...", "kind": "person", "none": true, "query": "..."}, {"term": "...", "kind": "law", "none": false, "query": {"cs": "...", "en": "...", "sk": "..."}}]}
+{"skip": true}
+
+The kind is one of: person, place, organization, work, law, code, abbreviation.
+
+Title: $title
+Translated title: $title_translated
+Keywords: $keywords
+Abstract (cs): $abstract_cs
+Abstract (en): $abstract_en
+Passage 1: $passage_1
+Passage 2: $passage_2

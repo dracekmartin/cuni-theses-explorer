@@ -93,6 +93,27 @@ thesis. The other 682 cut abstracts are worded differently in the text and stay 
 script also removes HTML entities, title pages and keywords that DSpace copied into an
 abstract.
 
+The test part of v2 has 200 new targets, 100 Czech, 60 English and 40 Slovak theses, with
+the query types of v1 in Czech and English (`generate_v2_queries.py`). Queries in Slovak
+would need a checker who reads Slovak well, so the LLM wrote none. For a query of the type
+`exact`, the LLM proposed up to five candidate terms for each target. A term counts when
+it stands in the text of the target, in no other thesis of the corpus and in at most three
+theses of the whole university, so that the query stays good over all of them (v3). Of the
+400 targets, 161 keep a term, mostly a name or a code typed alone, which makes 115 queries
+without a language. Of the other candidates, 956 stood in other theses of the corpus and
+226 in more theses of the university. The chosen terms were checked in their theses: two
+names of patients of a sanatorium, taken from archive files, and four terms the PDF or the
+thesis spelled wrong are left out, and so are citations and footnote numbers.
+
+| Query type in v2 | dev | test | Written from | Example |
+| --- | --- | --- | --- | --- |
+| `title` | 394 | 396 | the original and the translated title in DSpace | Vliv užívání elektronických cigaret na zdraví dutiny ústní |
+| `about-short` | 288 | 302 | title, keywords and abstract, by the LLM, in Czech and English | sale of unused churches |
+| `about-sentence` | 396 | 398 | the same | Jaký vliv mají lysolipidy na propustnost a strukturu rohové vrstvy kůže? |
+| `detail` | 400 | 400 | a passage from the body, by the LLM, in Czech and English | strategické předčasné volby v Makedonii 2014 |
+| `exact` | 94 | 70 | a term only the target holds, picked by the LLM from the abstract and two passages and checked by the script, mostly without a language | NIH BWP |
+| `topic` | 25 × 2 | 50 × 2, to come | Claude, for the departments of the corpus, relevance described in plain Czech | prevence užívání návykových látek u dospívajících |
+
 Reproduce v0: `build_pilot_corpus.py`, `generate_queries.py` and `topics.py add`, then the
 setups of experiment 03, then `topics.py judge` (needs `EINFRA_API_KEY` in `.env`). The
 blind sample of v0, `data/eval-v0/validation.md`, came from the judge step of that time
@@ -100,4 +121,4 @@ and stays as it is. For v1
 the same scripts run with `EVAL_VERSION=v1`, `build_v1_corpus.py` in place of the first,
 and the setups of experiment 05, then `topics.py sample` and, with the saved grades,
 `topics.py agreement --grades validation-grades.json`. For v2, so far: `abstracts.py`,
-`groups.py` and `build_v2_corpus.py` with `EVAL_VERSION=v2`.
+`groups.py`, `build_v2_corpus.py` and `generate_v2_queries.py` with `EVAL_VERSION=v2`.
