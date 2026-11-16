@@ -112,7 +112,14 @@ thesis spelled wrong are left out, and so are citations and footnote numbers.
 | `about-sentence` | 396 | 398 | the same | Jaký vliv mají lysolipidy na propustnost a strukturu rohové vrstvy kůže? |
 | `detail` | 400 | 400 | a passage from the body, by the LLM, in Czech and English | strategické předčasné volby v Makedonii 2014 |
 | `exact` | 94 | 70 | a term only the target holds, picked by the LLM from the abstract and two passages and checked by the script, mostly without a language | NIH BWP |
-| `topic` | 25 × 2 | 50 × 2, to come | Claude, for the departments of the corpus, relevance described in plain Czech | prevence užívání návykových látek u dospívajících |
+| `topic` | 25 × 2 | 50 × 2 | Claude, for the departments of the corpus, relevance described in plain Czech | prevence užívání návykových látek u dospívajících |
+
+Claude wrote the 50 topics of the test part like those of v1, for the departments of the
+corpus: at least two for each faculty and up to seven for the largest. They avoid the
+subjects of the dev topics, but some of their relevant theses are partly relevant to a dev
+topic, for example rehabilitation after a knee injury next to physiotherapy for low back
+pain, so the two parts share a few judged theses. A search for the words of each topic in
+titles, keywords and abstracts found at least three theses that are likely relevant.
 
 Reproduce v0: `build_pilot_corpus.py`, `generate_queries.py` and `topics.py add`, then the
 setups of experiment 03, then `topics.py judge` (needs `EINFRA_API_KEY` in `.env`). The
@@ -121,4 +128,5 @@ and stays as it is. For v1
 the same scripts run with `EVAL_VERSION=v1`, `build_v1_corpus.py` in place of the first,
 and the setups of experiment 05, then `topics.py sample` and, with the saved grades,
 `topics.py agreement --grades validation-grades.json`. For v2, so far: `abstracts.py`,
-`groups.py`, `build_v2_corpus.py` and `generate_v2_queries.py` with `EVAL_VERSION=v2`.
+`groups.py`, `build_v2_corpus.py`, `generate_v2_queries.py` and `topics.py add` with
+`EVAL_VERSION=v2`.

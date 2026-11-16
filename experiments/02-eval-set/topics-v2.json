@@ -1,0 +1,527 @@
+[
+ {
+  "id": "topic-01",
+  "part": "dev",
+  "cs": "prevence užívání návykových látek u dospívajících",
+  "en": "prevention of substance use among adolescents",
+  "narrative": "Relevantní (2): prevence nebo programy proti pití alkoholu, kouření nebo braní drog u dospívajících, a také to, co jim užívání usnadňuje nebo ho brzdí. Částečně relevantní (1): užívání návykových látek u dospělých, nebo jiné rizikové chování dospívajících, které se drog netýká."
+ },
+ {
+  "id": "topic-02",
+  "part": "dev",
+  "cs": "ochrana zaměstnance při výpovědi z pracovního poměru",
+  "en": "employee protection against dismissal",
+  "narrative": "Relevantní (2): jak zákon upravuje skončení pracovního poměru: důvody výpovědi, ochrana zaměstnance před výpovědí, odstupné. Částečně relevantní (1): jiná témata pracovního práva, třeba pracovní doba nebo diskriminace v práci."
+ },
+ {
+  "id": "topic-03",
+  "part": "dev",
+  "cs": "neuronový strojový překlad",
+  "en": "neural machine translation",
+  "narrative": "Relevantní (2): práce, které staví nebo hodnotí systémy strojového překladu založené na neuronových sítích. Částečně relevantní (1): jiné úlohy zpracování přirozeného jazyka řešené neuronovými sítěmi, nebo strojový překlad bez neuronových sítí."
+ },
+ {
+  "id": "topic-04",
+  "part": "dev",
+  "cs": "ruská zahraniční politika vůči postsovětským státům",
+  "en": "Russian foreign policy towards post-Soviet states",
+  "narrative": "Relevantní (2): politika Ruska vůči Ukrajině, Gruzii, Bělorusku, pobaltským státům nebo státům Střední Asie. Částečně relevantní (1): vnitřní politika Ruska, nebo politika EU či NATO v této oblasti."
+ },
+ {
+  "id": "topic-05",
+  "part": "dev",
+  "cs": "stárnutí populace v Česku",
+  "en": "population ageing in Czechia",
+  "narrative": "Relevantní (2): stárnutí obyvatel Česka, jeho příčiny, důsledky a výhledy do budoucna. Částečně relevantní (1): jiná demografická témata v Česku, třeba porodnost nebo migrace, nebo stárnutí obyvatel v jiných zemích."
+ },
+ {
+  "id": "topic-06",
+  "part": "dev",
+  "cs": "automatické testování a verifikace programů",
+  "en": "automated testing and verification of programs",
+  "narrative": "Relevantní (2): metody nebo nástroje, které programy testují nebo ověřují jejich správnost, ať automatickými testy, rozborem zdrojového kódu, nebo formálním důkazem. Částečně relevantní (1): kvalita softwaru nebo postup vývoje bez vlastních metod testování či ověřování."
+ },
+ {
+  "id": "topic-07",
+  "part": "dev",
+  "cs": "inkluzivní vzdělávání žáků se speciálními vzdělávacími potřebami",
+  "en": "inclusive education of pupils with special educational needs",
+  "narrative": "Relevantní (2): společné vzdělávání žáků se speciálními vzdělávacími potřebami v běžných školách, podpůrná opatření, asistenti pedagoga, postoje učitelů ke společnému vzdělávání. Částečně relevantní (1): vzdělávání těchto žáků ve speciálních školách, nebo jejich potřeby mimo školu."
+ },
+ {
+  "id": "topic-08",
+  "part": "dev",
+  "cs": "fyzioterapie bolesti dolní části zad",
+  "en": "physiotherapy for low back pain",
+  "narrative": "Relevantní (2): fyzioterapie, cvičení nebo jiná rehabilitace bolesti v dolní části zad (bederní páteře). Částečně relevantní (1): fyzioterapie bolesti jiných částí těla, třeba krku nebo kloubů, nebo bolest zad léčená jinak než fyzioterapií."
+ },
+ {
+  "id": "topic-09",
+  "part": "dev",
+  "cs": "rostlinné alkaloidy jako inhibitory cholinesteráz",
+  "en": "plant alkaloids as cholinesterase inhibitors",
+  "narrative": "Relevantní (2): práce, které z rostlin získávají alkaloidy (jednu skupinu přírodních látek) a zkoumají, jestli brzdí enzymy zvané cholinesterázy. Takové látky se hledají jako léky na Alzheimerovu chorobu. Částečně relevantní (1): jiné účinky rostlinných alkaloidů, nebo látky brzdící cholinesterázy, které nepocházejí z rostlin."
+ },
+ {
+  "id": "topic-10",
+  "part": "dev",
+  "cs": "industrializace českých zemí",
+  "en": "industrialisation of the Czech lands",
+  "narrative": "Relevantní (2): hospodářské a sociální dějiny průmyslové revoluce v českých zemích: továrny, podnikatelé, dělníci, železnice a průmysl od 18. do začátku 20. století. Částečně relevantní (1): hospodářské dějiny jiných zemí nebo pozdějších období, nebo sociální dějiny českých zemí bez vztahu k průmyslu."
+ },
+ {
+  "id": "topic-11",
+  "part": "dev",
+  "cs": "dezinformace v online médiích",
+  "en": "disinformation in online media",
+  "narrative": "Relevantní (2): dezinformace, falešné zprávy, propaganda nebo konspirační teorie šířené na internetu, a jejich ověřování. Částečně relevantní (1): manipulace v tisku, rozhlase nebo televizi, nebo online média a sociální sítě bez vztahu k dezinformacím."
+ },
+ {
+  "id": "topic-12",
+  "part": "dev",
+  "cs": "trestní odpovědnost právnických osob",
+  "en": "criminal liability of legal entities",
+  "narrative": "Relevantní (2): trestní odpovědnost firem a jiných právnických osob: kdy firma odpovídá za trestný čin, jaké tresty jí hrozí a jak to funguje v praxi. Částečně relevantní (1): jiná témata hospodářské trestné činnosti, nebo odpovědnost firem podle občanského či správního práva."
+ },
+ {
+  "id": "topic-13",
+  "part": "dev",
+  "cs": "vliv klimatické změny na rozšíření živočichů",
+  "en": "effect of climate change on the distribution of animals",
+  "narrative": "Relevantní (2): jak změna klimatu mění, kde živočichové žijí, kdy se rozmnožují nebo táhnou, nebo kolik jich je. Částečně relevantní (1): vliv změny klimatu na rostliny nebo na přírodu obecně, nebo rozšíření živočichů bez vztahu ke klimatu."
+ },
+ {
+  "id": "topic-14",
+  "part": "dev",
+  "cs": "znečištění podzemních vod",
+  "en": "groundwater contamination",
+  "narrative": "Relevantní (2): znečištění podzemní vody chemickými látkami: jak se šíří, jak se sleduje a jak se odstraňuje. Částečně relevantní (1): znečištění řek, jezer nebo půdy, nebo podzemní voda bez vztahu ke znečištění."
+ },
+ {
+  "id": "topic-15",
+  "part": "dev",
+  "cs": "výklad novozákonních podobenství",
+  "en": "interpretation of New Testament parables",
+  "narrative": "Relevantní (2): výklad Ježíšových podobenství z Nového zákona, tedy krátkých příběhů s poučením, třeba o milosrdném Samaritánovi. Částečně relevantní (1): výklad jiných textů Nového zákona, nebo podobenství mimo Nový zákon."
+ },
+ {
+  "id": "topic-16",
+  "part": "dev",
+  "cs": "duchovní péče o pacienty v nemocnicích",
+  "en": "spiritual care for hospital patients",
+  "narrative": "Relevantní (2): nemocniční kaplani a duchovní péče o nemocné a umírající, duchovní potřeby nevyléčitelně nemocných. Částečně relevantní (1): duchovní péče jinde, třeba ve vězení nebo v armádě, nebo psychická podpora pacientů bez duchovního rozměru."
+ },
+ {
+  "id": "topic-17",
+  "part": "dev",
+  "cs": "prevence dekubitů v ošetřovatelské péči",
+  "en": "prevention of pressure ulcers in nursing care",
+  "narrative": "Relevantní (2): prevence proleženin (dekubitů), hodnocení rizika, že vzniknou, a ošetřovatelská péče o ně. Částečně relevantní (1): jiná péče o ležící pacienty, nebo péče o jiné dlouho se hojící rány."
+ },
+ {
+  "id": "topic-18",
+  "part": "dev",
+  "cs": "akutní leukémie u dětí",
+  "en": "acute leukaemia in children",
+  "narrative": "Relevantní (2): akutní leukémie (rakovina krve) u dětí: jak se zjišťuje, jak se léčí, jak léčba dopadá a jaké má pozdější následky. Částečně relevantní (1): jiná nádorová onemocnění dětí, nebo leukémie u dospělých."
+ },
+ {
+  "id": "topic-19",
+  "part": "dev",
+  "cs": "orální historie každodenního života za komunismu",
+  "en": "oral history of everyday life under communism",
+  "narrative": "Relevantní (2): rozhovory s pamětníky nebo jejich vzpomínky na život v komunistickém Československu. Částečně relevantní (1): rozhovory s pamětníky o jiných obdobích, nebo dějiny komunistického režimu bez rozhovorů s pamětníky."
+ },
+ {
+  "id": "topic-20",
+  "part": "dev",
+  "cs": "environmentální výchova ve škole",
+  "en": "environmental education at school",
+  "narrative": "Relevantní (2): výchova k ochraně přírody a životního prostředí a k udržitelnosti ve školkách, na základních a na středních školách. Částečně relevantní (1): vztah dospělých k životnímu prostředí, nebo výuka venku bez zaměření na přírodu a životní prostředí."
+ },
+ {
+  "id": "topic-21",
+  "part": "dev",
+  "cs": "modelování znečištění ovzduší",
+  "en": "modelling of air pollution",
+  "narrative": "Relevantní (2): počítačové modely, které počítají, jak se znečištění šíří ovzduším nebo jak se v něm chemicky mění, a ověřování těchto modelů. Částečně relevantní (1): měření kvality ovzduší bez modelů, nebo modely počasí a klimatu, které znečištění nepočítají."
+ },
+ {
+  "id": "topic-22",
+  "part": "dev",
+  "cs": "školní pokusy ve výuce fyziky",
+  "en": "school experiments in physics teaching",
+  "narrative": "Relevantní (2): pokusy a ukázky pro hodiny fyziky na základních a středních školách: jak je připravit a jak je ve výuce použít. Částečně relevantní (1): pokusy ve výuce jiných přírodních věd, nebo výuka fyziky bez pokusů."
+ },
+ {
+  "id": "topic-23",
+  "part": "dev",
+  "cs": "měnová politika centrální banky",
+  "en": "monetary policy of the central bank",
+  "narrative": "Relevantní (2): měnová politika centrální banky, třeba České národní banky nebo Evropské centrální banky: úrokové sazby, cílování inflace, intervence na devizovém trhu. Částečně relevantní (1): státní rozpočet a daně, bankovnictví nebo finanční trhy bez vztahu k měnové politice."
+ },
+ {
+  "id": "topic-24",
+  "part": "dev",
+  "cs": "zubní kaz u dětí",
+  "en": "dental caries in children",
+  "narrative": "Relevantní (2): zubní kaz u dětí: jak je častý, jak mu předcházet a jak ho léčit. Částečně relevantní (1): jiné nemoci zubů a úst u dětí, nebo zubní kaz u dospělých."
+ },
+ {
+  "id": "topic-25",
+  "part": "dev",
+  "cs": "léčba diabetu 2. typu",
+  "en": "treatment of type 2 diabetes",
+  "narrative": "Relevantní (2): léčba cukrovky 2. typu léky, dietou, pohybem nebo jinak, její komplikace a to, jak pacienti léčbu dodržují. Částečně relevantní (1): cukrovka 1. typu nebo těhotenská cukrovka, nebo obezita bez vztahu k léčbě cukrovky."
+ },
+ {
+  "id": "topic-26",
+  "part": "test",
+  "cs": "čtenářská gramotnost dětí",
+  "en": "reading literacy in children",
+  "narrative": "Relevantní (2): jak děti v mateřské a základní škole čtou a rozumí textu a jak učitelé jejich čtení a vztah ke knihám rozvíjejí. Částečně relevantní (1): dětská literatura bez souvislosti s výukou čtení, nebo čtení dospělých."
+ },
+ {
+  "id": "topic-27",
+  "part": "test",
+  "cs": "šikana ve škole",
+  "en": "bullying at school",
+  "narrative": "Relevantní (2): šikana mezi žáky nebo studenty, i kyberšikana: jak se projevuje, jak se jí předchází a jak ji škola řeší. Částečně relevantní (1): jiné problémy vztahů ve třídě, třeba klima třídy nebo agresivita žáků."
+ },
+ {
+  "id": "topic-28",
+  "part": "test",
+  "cs": "vedení školy a role ředitele",
+  "en": "school leadership and the role of the head teacher",
+  "narrative": "Relevantní (2): ředitelé škol a vedení školy: styl řízení, rozhodování, práce s učiteli a hodnocení školy. Částečně relevantní (1): řízení jiných vzdělávacích organizací, nebo vedení lidí mimo školství."
+ },
+ {
+  "id": "topic-29",
+  "part": "test",
+  "cs": "výuka programování ve škole",
+  "en": "teaching programming at school",
+  "narrative": "Relevantní (2): výuka programování a algoritmického myšlení na základních a středních školách, i s robotickými stavebnicemi. Částečně relevantní (1): jiná výuka informatiky ve škole, nebo programování mimo školu."
+ },
+ {
+  "id": "topic-30",
+  "part": "test",
+  "cs": "výtvarná výchova ve škole",
+  "en": "art education at school",
+  "narrative": "Relevantní (2): výtvarná výchova ve škole: náměty a metody výuky, dětská výtvarná tvorba a její hodnocení. Částečně relevantní (1): výtvarná tvorba mimo školu, třeba v galerii nebo v umělecké škole, nebo dějiny umění bez souvislosti s výukou."
+ },
+ {
+  "id": "topic-31",
+  "part": "test",
+  "cs": "syndrom vyhoření u učitelů",
+  "en": "burnout among teachers",
+  "narrative": "Relevantní (2): vyhoření, stres a psychická zátěž učitelů a jak jim předcházet. Částečně relevantní (1): vyhoření v jiných pomáhajících profesích, třeba u zdravotníků nebo sociálních pracovníků."
+ },
+ {
+  "id": "topic-32",
+  "part": "test",
+  "cs": "aktivizační metody ve výuce chemie",
+  "en": "activating methods in chemistry teaching",
+  "narrative": "Relevantní (2): metody, které žáky ve výuce chemie zapojují: pokusy, hry, projekty, mobilní aplikace nebo práce s měřicími přístroji. Částečně relevantní (1): jiné otázky výuky chemie, třeba učebnice nebo vědomosti žáků, nebo aktivizační metody v jiných předmětech."
+ },
+ {
+  "id": "topic-33",
+  "part": "test",
+  "cs": "reakce rostlin na sucho",
+  "en": "plant responses to drought",
+  "narrative": "Relevantní (2): jak rostliny snášejí sucho a nedostatek vody: fyziologie, hormony, geny nebo růst v suchých podmínkách. Částečně relevantní (1): jiné stresy rostlin, třeba horko nebo zasolení půdy, nebo sucho v krajině bez souvislosti s rostlinami."
+ },
+ {
+  "id": "topic-34",
+  "part": "test",
+  "cs": "fosilní rostliny",
+  "en": "fossil plants",
+  "narrative": "Relevantní (2): zkameněliny rostlin a fosilní flóra: určování, popis a vývoj rostlin v geologické minulosti. Částečně relevantní (1): jiné zkameněliny, třeba živočichů, nebo vývoj dnešních rostlin bez fosilií."
+ },
+ {
+  "id": "topic-35",
+  "part": "test",
+  "cs": "apoptóza a buněčná smrt",
+  "en": "apoptosis and cell death",
+  "narrative": "Relevantní (2): řízená smrt buněk (apoptóza a další druhy buněčné smrti): jak probíhá, jak se řídí a jak ji ovlivňují léky nebo nemoci. Částečně relevantní (1): jiné děje v buňce, třeba buněčný cyklus nebo stres buňky, kde buněčná smrt není hlavním tématem."
+ },
+ {
+  "id": "topic-36",
+  "part": "test",
+  "cs": "příčiny a léčba neplodnosti",
+  "en": "causes and treatment of infertility",
+  "narrative": "Relevantní (2): neplodnost mužů i žen: příčiny, vyšetření a léčba, včetně asistované reprodukce (umělého oplodnění). Částečně relevantní (1): jiná témata těhotenství a porodu, nebo plodnost obyvatel z pohledu demografie."
+ },
+ {
+  "id": "topic-37",
+  "part": "test",
+  "cs": "sladkovodní ekosystémy",
+  "en": "freshwater ecosystems",
+  "narrative": "Relevantní (2): život v rybnících, jezerech, tůních a řekách: plankton, řasy, bezobratlí, ryby a jejich prostředí. Částečně relevantní (1): moře a mořští živočichové, nebo kvalita vody bez souvislosti s živými organismy."
+ },
+ {
+  "id": "topic-38",
+  "part": "test",
+  "cs": "ptáci a jejich chování",
+  "en": "birds and their behaviour",
+  "narrative": "Relevantní (2): ptáci: jejich chování, rozmnožování, početnost a rozšíření. Částečně relevantní (1): obecné poznatky o chování zvířat, kde ptáci nejsou hlavním tématem."
+ },
+ {
+  "id": "topic-39",
+  "part": "test",
+  "cs": "ochrana osobních údajů",
+  "en": "personal data protection",
+  "narrative": "Relevantní (2): právo na ochranu osobních údajů, GDPR, zpracování údajů o zaměstnancích, pacientech nebo zákaznících a dohled nad ním. Částečně relevantní (1): jiná práva spojená se soukromím, třeba ochrana pověsti, nebo bezpečnost dat bez právního rozboru."
+ },
+ {
+  "id": "topic-40",
+  "part": "test",
+  "cs": "péče o dítě po rozvodu rodičů",
+  "en": "child custody after divorce",
+  "narrative": "Relevantní (2): komu soud svěří dítě po rozvodu nebo rozchodu rodičů: střídavá péče, styk s dítětem, výživné a postup soudu. Částečně relevantní (1): jiná témata rodinného práva, třeba rozvod sám nebo osvojení."
+ },
+ {
+  "id": "topic-41",
+  "part": "test",
+  "cs": "ochrana spotřebitele",
+  "en": "consumer protection",
+  "narrative": "Relevantní (2): práva spotřebitele vůči obchodníkům: reklamace, nekalé obchodní praktiky, smluvní podmínky a jejich změny, dohled nad trhem. Částečně relevantní (1): chování spotřebitelů a marketing bez právního rozboru."
+ },
+ {
+  "id": "topic-42",
+  "part": "test",
+  "cs": "přestupky a správní trestání",
+  "en": "administrative offences and penalties",
+  "narrative": "Relevantní (2): přestupky a jejich trestání úřady: odpovědnost za přestupek, pokuty a řízení o přestupku. Částečně relevantní (1): trestné činy a trestní právo, nebo jiné správní řízení bez trestání."
+ },
+ {
+  "id": "topic-43",
+  "part": "test",
+  "cs": "azylová a migrační politika Evropské unie",
+  "en": "asylum and migration policy of the European Union",
+  "narrative": "Relevantní (2): jak EU a její státy řeší migraci a žádosti o azyl: pravidla, kvóty, ochrana hranic, uprchlická krize. Částečně relevantní (1): migrace mimo EU, nebo obraz migrantů v médiích bez rozboru politiky."
+ },
+ {
+  "id": "topic-44",
+  "part": "test",
+  "cs": "NATO a kolektivní obrana",
+  "en": "NATO and collective defence",
+  "narrative": "Relevantní (2): Severoatlantická aliance (NATO): její role, rozšiřování, společná obrana a vztahy členských států. Částečně relevantní (1): jiné otázky bezpečnosti a obrany, třeba bezpečnostní politika jednoho státu, nebo vztahy s Ruskem bez souvislosti s NATO."
+ },
+ {
+  "id": "topic-45",
+  "part": "test",
+  "cs": "nezaměstnanost a trh práce",
+  "en": "unemployment and the labour market",
+  "narrative": "Relevantní (2): nezaměstnanost a trh práce: příčiny nezaměstnanosti, její měření, politika zaměstnanosti a podpora v nezaměstnanosti. Částečně relevantní (1): jiné otázky práce a mezd, třeba výše mezd nebo pracovní migrace."
+ },
+ {
+  "id": "topic-46",
+  "part": "test",
+  "cs": "římské vojsko a provincie",
+  "en": "the Roman army and provinces",
+  "narrative": "Relevantní (2): římská armáda, její tábory, výzbroj a hranice říše (limes), a život v římských provinciích. Částečně relevantní (1): jiná témata římských dějin nebo archeologie, třeba římské zahrady nebo umění."
+ },
+ {
+  "id": "topic-47",
+  "part": "test",
+  "cs": "rozpad Jugoslávie",
+  "en": "breakup of Yugoslavia",
+  "narrative": "Relevantní (2): rozpad Jugoslávie na počátku 90. let a války, které ho provázely, i jejich příčiny a důsledky. Částečně relevantní (1): jiná témata dějin Jugoslávie a jejích nástupnických států, třeba jugoslávská identita nebo dnešní Bosna a Hercegovina."
+ },
+ {
+  "id": "topic-48",
+  "part": "test",
+  "cs": "komentovaný překlad literárního textu",
+  "en": "annotated translation of a literary text",
+  "narrative": "Relevantní (2): překlad literárního díla (románu, povídek, poezie) doplněný komentářem k překladatelským problémům. Částečně relevantní (1): komentovaný překlad odborného nebo publicistického textu, nebo teorie překladu bez vlastního překladu."
+ },
+ {
+  "id": "topic-49",
+  "part": "test",
+  "cs": "trénink mládeže ve fotbale",
+  "en": "youth football training",
+  "narrative": "Relevantní (2): příprava a trénink mladých fotbalistů: pohybové schopnosti, kondice, technika a výběr talentů. Částečně relevantní (1): trénink dospělých fotbalistů, nebo trénink mládeže v jiných sportech."
+ },
+ {
+  "id": "topic-50",
+  "part": "test",
+  "cs": "úpolové sporty a bojová umění",
+  "en": "combat sports and martial arts",
+  "narrative": "Relevantní (2): judo, karate, box, zápas a jiné bojové sporty: trénink, technika, výkon a zdraví sportovců. Částečně relevantní (1): sebeobrana a bojové techniky mimo sport, třeba u policie, nebo kondiční příprava bez vazby na bojový sport."
+ },
+ {
+  "id": "topic-51",
+  "part": "test",
+  "cs": "rehabilitace po zranění kolene",
+  "en": "rehabilitation after knee injury",
+  "narrative": "Relevantní (2): fyzioterapie a cvičení po zranění nebo operaci kolene, třeba po přetržení předního zkříženého vazu. Částečně relevantní (1): zranění kolene bez rehabilitace, nebo rehabilitace jiných kloubů."
+ },
+ {
+  "id": "topic-52",
+  "part": "test",
+  "cs": "supervize v sociálních a zdravotnických službách",
+  "en": "supervision in social and health services",
+  "narrative": "Relevantní (2): supervize, tedy pravidelné rozhovory pracovníků o jejich práci s odborníkem, v sociálních službách, nemocnicích nebo hospicích. Částečně relevantní (1): jiná podpora pracovníků pomáhajících profesí, třeba vzdělávání nebo prevence vyhoření."
+ },
+ {
+  "id": "topic-53",
+  "part": "test",
+  "cs": "reklama a její působení",
+  "en": "advertising and its effects",
+  "narrative": "Relevantní (2): reklama: jak je sestavená, jak působí na lidi a jak pracuje s jazykem, obrazem a symboly. Částečně relevantní (1): jiný marketing a propagace, třeba vztahy s veřejností nebo politické kampaně."
+ },
+ {
+  "id": "topic-54",
+  "part": "test",
+  "cs": "romská menšina",
+  "en": "the Roma minority",
+  "narrative": "Relevantní (2): Romové v Česku, na Slovensku nebo jinde: jejich život, vzdělávání, kultura, jazyk a vztahy s většinou. Částečně relevantní (1): jiné národnostní a etnické menšiny, nebo sociální vyloučení bez zaměření na Romy."
+ },
+ {
+  "id": "topic-55",
+  "part": "test",
+  "cs": "konvektivní bouře a blesky",
+  "en": "convective storms and lightning",
+  "narrative": "Relevantní (2): bouřky a konvektivní bouře a blesky: jak vznikají, jak se pozorují družicemi a radary a jak se modelují. Částečně relevantní (1): jiné jevy v atmosféře, třeba srážky nebo vítr, bez souvislosti s bouřkami."
+ },
+ {
+  "id": "topic-56",
+  "part": "test",
+  "cs": "optická spektroskopie materiálů",
+  "en": "optical spectroscopy of materials",
+  "narrative": "Relevantní (2): zkoumání látek a materiálů světlem: absorpční, Ramanova nebo fluorescenční spektroskopie a měření optických vlastností. Částečně relevantní (1): jiné spektroskopické metody, třeba NMR nebo hmotnostní spektrometrie."
+ },
+ {
+  "id": "topic-57",
+  "part": "test",
+  "cs": "kombinatorika a teorie grafů",
+  "en": "combinatorics and graph theory",
+  "narrative": "Relevantní (2): matematika grafů (sítí z bodů a spojnic) a kombinatorika: vlastnosti grafů, algoritmy na grafech, počítání uspořádání. Částečně relevantní (1): jiné části diskrétní matematiky nebo teoretické informatiky, třeba složitost algoritmů."
+ },
+ {
+  "id": "topic-58",
+  "part": "test",
+  "cs": "farmaceutická péče v lékárně",
+  "en": "pharmaceutical care in the pharmacy",
+  "narrative": "Relevantní (2): práce lékárníka s pacientem: poradenství, kontrola lékových interakcí, dodržování léčby a volně prodejné léky. Částečně relevantní (1): užívání léků pacienty bez role lékárníka, nebo provoz lékárny."
+ },
+ {
+  "id": "topic-59",
+  "part": "test",
+  "cs": "nanočástice jako nosiče léčiv",
+  "en": "nanoparticles as drug carriers",
+  "narrative": "Relevantní (2): částice o velikosti nanometrů, které přenášejí léčivo v těle: jejich výroba, vlastnosti a uvolňování léčiva. Částečně relevantní (1): jiné lékové formy s řízeným uvolňováním, nebo nanočástice bez použití pro léčiva."
+ },
+ {
+  "id": "topic-60",
+  "part": "test",
+  "cs": "onemocnění štítné žlázy",
+  "en": "thyroid diseases",
+  "narrative": "Relevantní (2): nemoci štítné žlázy, třeba její snížená nebo zvýšená činnost, záněty nebo nádory: příčiny, vyšetření a léčba. Částečně relevantní (1): jiné hormonální nemoci, nebo jód ve výživě bez souvislosti se štítnou žlázou."
+ },
+ {
+  "id": "topic-61",
+  "part": "test",
+  "cs": "dědičné metabolické poruchy",
+  "en": "inherited metabolic disorders",
+  "narrative": "Relevantní (2): vrozené poruchy látkové přeměny, třeba fenylketonurie nebo lysozomální onemocnění: příčiny, diagnostika a léčba. Částečně relevantní (1): jiné vzácné dědičné nemoci, nebo získané poruchy látkové přeměny."
+ },
+ {
+  "id": "topic-62",
+  "part": "test",
+  "cs": "sociální služby pro lidi bez domova",
+  "en": "social services for homeless people",
+  "narrative": "Relevantní (2): lidé bez domova a služby pro ně: azylové domy, terénní práce, návrat do bydlení a do práce. Částečně relevantní (1): jiné sociální služby pro lidi v nouzi, nebo chudoba bez zaměření na bezdomovectví."
+ },
+ {
+  "id": "topic-63",
+  "part": "test",
+  "cs": "Starý zákon a prorocká literatura",
+  "en": "the Old Testament and prophetic literature",
+  "narrative": "Relevantní (2): výklad knih Starého zákona, zvlášť proroků a žalmů, a jejich teologie. Částečně relevantní (1): jiné texty židovské tradice, nebo dějiny starověkého Izraele bez výkladu biblických textů."
+ },
+ {
+  "id": "topic-64",
+  "part": "test",
+  "cs": "barokní sakrální umění",
+  "en": "baroque sacred art",
+  "narrative": "Relevantní (2): náboženské umění a architektura baroka: kostely, sochy, obrazy a jejich tvůrci. Částečně relevantní (1): barokní umění bez náboženského námětu, nebo sakrální umění jiného období."
+ },
+ {
+  "id": "topic-65",
+  "part": "test",
+  "cs": "manželství v kanonickém právu",
+  "en": "marriage in canon law",
+  "narrative": "Relevantní (2): manželství podle práva katolické církve: podmínky uzavření, překážky a prohlášení manželství za neplatné. Částečně relevantní (1): manželství ve státním právu, nebo jiné části církevního práva."
+ },
+ {
+  "id": "topic-66",
+  "part": "test",
+  "cs": "pěstounská péče",
+  "en": "foster care",
+  "narrative": "Relevantní (2): pěstounská péče, i péče na přechodnou dobu: pěstouni, děti v péči, jejich podpora a ukončení péče. Částečně relevantní (1): jiná náhradní rodinná péče, třeba osvojení nebo dětské domovy."
+ },
+ {
+  "id": "topic-67",
+  "part": "test",
+  "cs": "islám a muslimové v Evropě",
+  "en": "Islam and Muslims in Europe",
+  "narrative": "Relevantní (2): muslimové v evropských zemích a islám v Evropě: náboženský život, identita, vztahy se společností a obraz islámu. Částečně relevantní (1): islám mimo Evropu, nebo náboženské menšiny v Evropě bez zaměření na islám."
+ },
+ {
+  "id": "topic-68",
+  "part": "test",
+  "cs": "očkování a postoje k němu",
+  "en": "vaccination and attitudes towards it",
+  "narrative": "Relevantní (2): očkování proti nemocem: očkovací strategie, účinnost a bezpečnost vakcín, postoje a znalosti lidí. Částečně relevantní (1): jiná prevence infekčních nemocí, nebo imunita bez souvislosti s očkováním."
+ },
+ {
+  "id": "topic-69",
+  "part": "test",
+  "cs": "poruchy sluchu",
+  "en": "hearing loss",
+  "narrative": "Relevantní (2): nedoslýchavost a hluchota: příčiny, vyšetření sluchu, sluchadla a kochleární implantáty. Částečně relevantní (1): jiné nemoci ucha, nosu a krku, nebo život neslyšících bez zdravotní stránky."
+ },
+ {
+  "id": "topic-70",
+  "part": "test",
+  "cs": "dětská mozková obrna",
+  "en": "cerebral palsy in children",
+  "narrative": "Relevantní (2): dětská mozková obrna: projevy, rehabilitace, ergoterapie a život dětí s ní. Částečně relevantní (1): jiná tělesná postižení dětí, nebo rehabilitace dospělých po poškození mozku."
+ },
+ {
+  "id": "topic-71",
+  "part": "test",
+  "cs": "rehabilitace po cévní mozkové příhodě",
+  "en": "rehabilitation after stroke",
+  "narrative": "Relevantní (2): fyzioterapie a další rehabilitace lidí po mrtvici (cévní mozkové příhodě). Částečně relevantní (1): akutní léčba mrtvice bez rehabilitace, nebo rehabilitace po jiných poškozeních mozku."
+ },
+ {
+  "id": "topic-72",
+  "part": "test",
+  "cs": "kolorektální karcinom",
+  "en": "colorectal cancer",
+  "narrative": "Relevantní (2): rakovina tlustého střeva a konečníku: příčiny, screening, chirurgická a jiná léčba. Částečně relevantní (1): jiné nádory trávicího traktu, nebo jiné nemoci tlustého střeva."
+ },
+ {
+  "id": "topic-73",
+  "part": "test",
+  "cs": "péče o matku a novorozence po porodu",
+  "en": "care of mother and newborn after birth",
+  "narrative": "Relevantní (2): péče o ženu a novorozence po porodu: kojení, šestinedělí, informovanost matek a práce porodních asistentek. Částečně relevantní (1): péče v těhotenství nebo během porodu, nebo péče o starší kojence."
+ },
+ {
+  "id": "topic-74",
+  "part": "test",
+  "cs": "arteriální hypertenze",
+  "en": "arterial hypertension",
+  "narrative": "Relevantní (2): vysoký krevní tlak: příčiny, měření, léčba a následky pro srdce a cévy. Částečně relevantní (1): jiné nemoci srdce a cév, nebo vysoký tlak v plicním oběhu (plicní hypertenze)."
+ },
+ {
+  "id": "topic-75",
+  "part": "test",
+  "cs": "mezenchymální kmenové buňky",
+  "en": "mesenchymal stem cells",
+  "narrative": "Relevantní (2): mezenchymální kmenové buňky: jak se získávají, jak se z nich stávají jiné buňky, třeba kostní, chrupavkové nebo tukové, a jak se dají použít v léčbě. Částečně relevantní (1): jiné kmenové buňky, nebo tkáňové inženýrství bez kmenových buněk."
+ }
+]

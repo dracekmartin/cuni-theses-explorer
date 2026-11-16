@@ -3,9 +3,11 @@
 Four steps, run in this order (EVAL_VERSION=v1 in front of each for version v1):
 
     python experiments/02-eval-set/topics.py add
-        Writes the topics of the version (topics.json for v0, topics-v1.json for v1) into
-        eval/<version>/queries.jsonl, each in Czech and English, type "topic", so that
-        every search setup answers them in its next run.
+        Writes the topics of the version (topics.json for v0, topics-v1.json for v1,
+        topics-v2.json for v2) into eval/<version>/queries.jsonl, each in Czech and English,
+        type "topic", so that every search setup answers them in its next run. A topic of
+        v2 goes into the part it belongs to, eval/v2/dev or eval/v2/test. The other steps
+        do not handle the parts of v2 yet.
 
     python experiments/02-eval-set/topics.py judge [--depth N]
         Pools the top results of every run of the version (data/runs/03-search-setups/ for
@@ -46,6 +48,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from build_v2_corpus import PARTS, check_parts
 from common import (
     CORPUS_META_PATH,
     DATA_DIR,
@@ -72,6 +75,8 @@ HERE = Path(__file__).resolve().parent
 SETTINGS = {
     "v0": {"topics": "topics.json", "runs": "03-search-setups", "depth": 20, "sample": 30},
     "v1": {"topics": "topics-v1.json", "runs": "05-search-v1", "depth": 10, "sample": 150},
+    # The dev topics of v2 are those of v1, so the runs of experiment 05 pool them.
+    "v2": {"topics": "topics-v2.json", "runs": "05-search-v1", "depth": 10, "sample": 150},
 }[VERSION]
 TOPICS_PATH = HERE / str(SETTINGS["topics"])
 RUNS_DIR = REPO_ROOT / "data" / "runs" / str(SETTINGS["runs"])
@@ -84,52 +89,66 @@ SEED = 20260924
 GRADE_LINE = "Známka (0, 1, 2):"
 
 
-def read_queries() -> list[dict[str, Any]]:
-    with (EVAL_DIR / "queries.jsonl").open(encoding="utf-8") as file:
+def read_queries(folder: Path = EVAL_DIR) -> list[dict[str, Any]]:
+    with (folder / "queries.jsonl").open(encoding="utf-8") as file:
         return [json.loads(line) for line in file if line.strip()]
 
 
-def write_queries(queries: list[dict[str, Any]]) -> None:
-    with (EVAL_DIR / "queries.jsonl").open("w", encoding="utf-8") as file:
+def write_queries(queries: list[dict[str, Any]], folder: Path = EVAL_DIR) -> None:
+    with (folder / "queries.jsonl").open("w", encoding="utf-8", newline="\n") as file:
         for item in queries:
             file.write(json.dumps(item, ensure_ascii=False) + "\n")
 
 
-def rewrite_qrels(topic_ids: set[str], lines: list[str]) -> None:
+def rewrite_qrels(topic_ids: set[str], lines: list[str], folder: Path = EVAL_DIR) -> None:
     """Replace the topic part of qrels.txt, keeping every other judgment."""
-    path = EVAL_DIR / "qrels.txt"
+    path = folder / "qrels.txt"
     kept = [
         line
         for line in path.read_text(encoding="utf-8").splitlines()
         if line.strip() and line.split()[0] not in topic_ids
     ]
-    path.write_text("".join(f"{line}\n" for line in kept + lines), encoding="utf-8")
+    path.write_text("".join(f"{line}\n" for line in kept + lines), encoding="utf-8", newline="\n")
 
 
 def read_topics() -> list[dict[str, Any]]:
     return json.loads(TOPICS_PATH.read_text(encoding="utf-8"))
 
 
+def folders() -> dict[str, Path]:
+    """Where the topics of a part go: the parts of v2, or the version itself before it."""
+    if VERSION == "v2":
+        return {part: EVAL_DIR / part for part in PARTS}
+    return {"": EVAL_DIR}
+
+
 def add() -> None:
     topics = read_topics()
-    queries = [query for query in read_queries() if query["type"] != "topic"]
-    for topic in topics:
-        for lang in ("cs", "en"):
-            queries.append(
-                {
-                    "id": f"{topic['id']}-{lang}",
-                    "group": topic["id"],
-                    "lang": lang,
-                    "type": "topic",
-                    "text": topic[lang],
-                    "target": None,
-                    "target_lang": None,
-                    "narrative": topic["narrative"],
-                }
-            )
-    write_queries(queries)
-    rewrite_qrels({f"{topic['id']}-{lang}" for topic in topics for lang in ("cs", "en")}, [])
-    print(f"{len(topics)} topics added, {len(queries)} queries in total")
+    if stray := [topic["id"] for topic in topics if topic.get("part", "") not in folders()]:
+        raise SystemExit(f"topics without a part of {VERSION}: {stray}")
+    for part, folder in folders().items():
+        mine = [topic for topic in topics if topic.get("part", "") == part]
+        queries = [query for query in read_queries(folder) if query["type"] != "topic"]
+        for topic in mine:
+            for lang in ("cs", "en"):
+                queries.append(
+                    {
+                        "id": f"{topic['id']}-{lang}",
+                        "group": topic["id"],
+                        "lang": lang,
+                        "type": "topic",
+                        "text": topic[lang],
+                        "target": None,
+                        "target_lang": None,
+                        "narrative": topic["narrative"],
+                    }
+                )
+        write_queries(queries, folder)
+        ids = {f"{topic['id']}-{lang}" for topic in mine for lang in ("cs", "en")}
+        rewrite_qrels(ids, [], folder)
+        print(f"{part or VERSION}: {len(mine)} topics added, {len(queries)} queries in total")
+    if VERSION == "v2":
+        check_parts()
 
 
 def pools(topic_queries: list[dict[str, Any]], depth: int) -> dict[str, set[str]]:
@@ -426,6 +445,8 @@ def main() -> None:
     parser.add_argument("--grades", type=Path, help="grades saved by validation.html")
     args = parser.parse_args()
     utf8_stdout()
+    if VERSION == "v2" and args.step != "add":
+        raise SystemExit(f"the step {args.step} does not handle the parts of v2 yet")
     if args.step == "add":
         add()
     elif args.step == "judge":
