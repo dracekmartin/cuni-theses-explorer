@@ -106,3 +106,66 @@ def test_topic_without_a_part_stops_the_step(
     monkeypatch.setattr(topics, "TOPICS_PATH", listed)
     with pytest.raises(SystemExit, match="topic-26"):
         topics.add()
+
+
+def test_a_run_of_a_larger_corpus_pools_like_a_run_of_v2(tmp_path: Path) -> None:
+    from topics import top_results
+
+    run = tmp_path / "setup.run"
+    ranked = ["h/twin", "h/outside", "h/rep", "h/2", "h/3"]
+    lines = [f"topic-01-cs Q0 {handle} {rank} 1.0 setup" for rank, handle in enumerate(ranked, 1)]
+    run.write_text("\n".join([*lines, "ki-0001-title-cs Q0 h/2 1 1.0 setup"]), encoding="utf-8")
+    as_corpus = {"h/rep": "h/rep", "h/twin": "h/rep", "h/2": "h/2", "h/3": "h/3"}
+    top = top_results(run, {"topic-01-cs"}, 2, as_corpus)
+    assert top == {"topic-01-cs": ["h/rep", "h/2"]}
+
+
+def test_judge_keeps_the_qrels_of_a_part_when_a_pair_gets_no_grade(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import topics
+    from common import Thesis
+
+    qrels = "topic-01-cs 0 h/1 2\ntopic-01-en 0 h/1 2\n"
+    write_parts(
+        tmp_path, [topic("topic-01-cs", "zubní kaz"), topic("topic-01-en", "caries")], [], qrels
+    )
+    listed = tmp_path / "topics.json"
+    entries = [
+        {"id": "topic-01", "part": "dev", "cs": "zubní kaz", "en": "caries", "narrative": "n"}
+    ]
+    listed.write_text(json.dumps(entries), encoding="utf-8")
+    corpus = tmp_path / "corpus.jsonl"
+    theses = [
+        Thesis(h, "u", "f", None, None, None, "cs", "t", "cs", None, None, None, None)
+        for h in ("h/1", "h/2")
+    ]
+    corpus.write_text(
+        "".join(json.dumps(thesis.__dict__) + "\n" for thesis in theses), encoding="utf-8"
+    )
+    run = tmp_path / "setup.run"
+    run.write_text("topic-01-cs Q0 h/2 1 1.0 setup\n", encoding="utf-8")
+    monkeypatch.setattr(topics, "EVAL_DIR", tmp_path)
+    monkeypatch.setattr(topics, "TOPICS_PATH", listed)
+    monkeypatch.setattr(topics, "CORPUS_META_PATH", corpus)
+    monkeypatch.setattr(topics, "corpus_map", lambda: {"h/1": "h/1", "h/2": "h/2"})
+    monkeypatch.setattr(topics, "load_api_key", lambda: "fake-key")
+    monkeypatch.setattr(topics, "check_parts", lambda: None)
+    # The pair judged earlier fails and the new pair gets a grade.
+    monkeypatch.setattr(
+        topics, "grade", lambda _client, _topic, thesis: 2 if thesis.handle == "h/2" else None
+    )
+    with pytest.raises(SystemExit, match="1 pairs got no grade"):
+        topics.judge(10, "dev", [run])
+    assert (tmp_path / "dev" / "qrels.txt").read_text(encoding="utf-8") == qrels
+
+
+def test_agreement_reweighted_to_the_pool() -> None:
+    from topics import pool_weights, weighted_kappa
+
+    model = [2, 2, 0, 0]
+    weights = pool_weights(model, {"0": 80, "1": 0, "2": 20})
+    assert weights == [10.0, 10.0, 40.0, 40.0]
+    human = [2, 1, 0, 1]
+    repeated = weighted_kappa([2, 1, 0, 0, 1], [2, 2, 0, 0, 0])
+    assert weighted_kappa(human, model, weights=[1, 1, 2, 1]) == pytest.approx(repeated)

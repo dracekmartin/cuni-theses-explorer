@@ -93,11 +93,11 @@
       <button id="next">Další →</button>
       <button id="first-open">První neohodnocená</button>
     </div>
-    <button class="primary" id="save">Uložit známky (validation-grades.json)</button>
+    <button class="primary" id="save">Uložit známky (__GRADES__)</button>
   </nav>
   <p class="help">Klávesy 0, 1 a 2 zapíšou známku a posunou na další dvojici, N znamená
     „nevím“ (do shody se nepočítá), šipky listují. Průběh si prohlížeč pamatuje. Na konci ulož známky tlačítkem a soubor dej do
-    data/eval-__VERSION__/.</p>
+    __FOLDER__.</p>
   <p class="notice" id="notice"></p>
 </main>
 
@@ -182,7 +182,7 @@ function save() {
   const blob = new Blob([JSON.stringify(record, null, 1)], { type: "application/json" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  link.download = "validation-grades.json";
+  link.download = "__GRADES__";
   link.click();
   URL.revokeObjectURL(link.href);
 }

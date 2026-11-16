@@ -194,14 +194,14 @@ def valid(parsed: dict[str, Any] | None, keys: tuple[str, ...]) -> bool:
     )
 
 
-def complete(client: Any, messages: list[dict[str, str]]) -> Any:
+def complete(client: Any, messages: list[dict[str, str]], temperature: float = 0.3) -> Any:
     """One chat completion, waiting out rate limits and transient failures of the API."""
     import openai
 
     for wait in (10, 20, 40, 60, 90, 120):
         try:
             return client.chat.completions.create(
-                model=MODEL, messages=messages, temperature=0.3, max_tokens=2000
+                model=MODEL, messages=messages, temperature=temperature, max_tokens=2000
             )
         except (openai.RateLimitError, openai.APIConnectionError, openai.InternalServerError):
             time.sleep(wait)
