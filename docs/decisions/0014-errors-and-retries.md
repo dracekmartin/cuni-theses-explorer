@@ -29,7 +29,9 @@ every caller would have to know httpx, psycopg and the SDK of each provider.
   `AssertionError` and ends as a 500.
 - A boundary module (decision 0015) converts an exception of its library (httpx, psycopg,
   the SDK of a provider) into one of these and keeps the cause (`raise ... from err`).
-  Code outside the boundary modules never catches the exceptions of those libraries.
+  When the message of the original exception can contain the text of a thesis or
+  a query, the cause is dropped instead (decision 0017). Code outside the boundary
+  modules never catches the exceptions of those libraries.
 - Only boundary modules retry, and only after a passing failure: a refused or broken
   connection, a timeout, HTTP 429, 502, 503 or 504. The number of attempts is limited,
   the wait between them grows, and a `Retry-After` header sets the wait up to a cap.

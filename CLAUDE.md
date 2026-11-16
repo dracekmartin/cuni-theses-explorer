@@ -79,6 +79,12 @@ and ideation documents live in the sibling repo `dracekmartin/diplomkaManagement
   and 78 (configuration). A batch command saves and records each unit of work whole, and
   after SIGTERM or Ctrl+C it finishes the units in progress and exits with 75 (decision
   0016).
+- **Logging:** code in `libs/` writes to `logging.getLogger(__name__)`, and only
+  a program in `apps/` configures logging. A log names a thesis by its id and version,
+  never by its text, title, abstract or the names of its people. No IP addresses or
+  secrets, and the text of a query only through the logger `explorer.queries` in the
+  API. Validation errors without input values, and a library exception whose message can
+  carry content is raised again `from None` (decision 0017).
 
 ## Quality gates
 
