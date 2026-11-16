@@ -1,6 +1,7 @@
 # 0019: Property, contract and interruption tests, coverage and time
 
-Date: 2026-11-16. Status: accepted.
+Date: 2026-11-16. Status: accepted. Since decision 0020 the main job of CI runs the tests
+that need PostgreSQL, the tests with a real SIGTERM included, and measures their coverage.
 
 ## Context
 

@@ -1,6 +1,7 @@
 # 0018: Test levels and test data
 
-Date: 2026-11-16. Status: accepted.
+Date: 2026-11-16. Status: accepted. Since decision 0020 the main job of CI runs the tests
+marked `db` too.
 
 ## Context
 

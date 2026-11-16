@@ -96,13 +96,19 @@ and ideation documents live in the sibling repo `dracekmartin/diplomkaManagement
   promises. It finds the classes in the registry, so a new class changes no existing
   test. Every batch command has a test that stops it, runs it again and compares the
   result with a run that was not stopped (decision 0019).
+- **External services in tests:** an HTTP adapter creates its client itself, with its
+  timeouts, and takes only a transport from its caller. Its tests pass `MockTransport`
+  with responses written by hand, never copied from DSpace or e-INFRA. A test that calls
+  a real service is marked `network` and runs only with the option `--network` (decision
+  0020).
 
 ## Quality gates
 
-`uv sync` installs the workspace, the tools and the experiment dependencies. Run before
-pushing (CI runs the same):
+`uv sync` installs the workspace, the tools and the experiment dependencies. Tests marked
+`db` need the database for tests in Docker. Run before pushing (CI runs the same):
 
 ```sh
+docker compose up --wait test-db
 uv run ruff format --check .
 uv run ruff check .
 uv run basedpyright

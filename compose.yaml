@@ -1,0 +1,22 @@
+# Only the database for tests so far. The services of the system come with the application
+# (decision 0002) and their database uses the same image.
+services:
+  # Data in memory and a port of its own, so tests never touch the data of development
+  # (decision 0020).
+  test-db:
+    image: pgvector/pgvector:0.8.7-pg18-trixie
+    profiles: ["test"]
+    environment:
+      POSTGRES_USER: explorer
+      POSTGRES_PASSWORD: explorer
+      POSTGRES_DB: explorer
+    ports:
+      - "127.0.0.1:5433:5432"
+    tmpfs:
+      - /var/lib/postgresql
+    healthcheck:
+      # Over TCP: the temporary server of the first start listens only on a socket.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U explorer -d explorer"]
+      interval: 1s
+      timeout: 3s
+      retries: 30

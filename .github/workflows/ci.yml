@@ -15,6 +15,10 @@ jobs:
 
       - uses: astral-sh/setup-uv@v10.3.3
 
+      # It starts first, so the database is ready while uv installs (decision 0020).
+      - name: Start the database for tests
+        run: docker compose up --wait test-db
+
       - name: Install the workspace, the tools and the experiment dependencies
         run: uv sync --all-packages --locked
 
@@ -30,9 +34,8 @@ jobs:
       - name: Layers inside explorer (import-linter)
         run: uv run --no-sync lint-imports
 
-      # No database in CI yet, so tests marked db do not run here (decision 0018).
       - name: Tests (pytest) with branch coverage
-        run: uv run --no-sync coverage run -m pytest -m "not db and not model and not gpu" --durations=10
+        run: uv run --no-sync coverage run -m pytest -m "not model and not gpu" --durations=10
 
       - name: Coverage of libs and apps
         run: uv run --no-sync coverage report
