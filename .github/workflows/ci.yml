@@ -124,6 +124,113 @@ jobs:
       - name: Coverage of explorer_models_local
         run: uv run --no-sync coverage report --include='libs/explorer-models-local/*'
 
+  # A released API must not break its clients (decision 0022).
+  api-compat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The release tags and the history they are found in.
+          fetch-depth: 0
+
+      - name: The API has its specification
+        run: |
+          if grep -rqE '^\s*(import|from)\s+fastapi' apps/explorer-api/src && [ ! -f apps/explorer-api/openapi.json ]; then
+            echo "explorer-api uses FastAPI, but apps/explorer-api/openapi.json is missing."
+            exit 1
+          fi
+
+      - name: Find the specification of the last release
+        id: release
+        run: |
+          # A tag with a suffix, such as v1.0.0-rc.1, is not a release.
+          tag=$(git describe --tags --abbrev=0 --match 'v[0-9]*' --exclude '*-*' 2>/dev/null || true)
+          if [ -z "$tag" ]; then
+            echo "No release yet."
+          elif ! git cat-file -e "$tag:apps/explorer-api/openapi.json" 2>/dev/null; then
+            echo "Release $tag has no API specification."
+          else
+            git show "$tag:apps/explorer-api/openapi.json" > openapi-release.json
+            echo "spec=openapi-release.json" >> "$GITHUB_OUTPUT"
+          fi
+          if [ -f apps/explorer-api/openapi-warn-ignore.txt ]; then
+            echo "warn_ignore=apps/explorer-api/openapi-warn-ignore.txt" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: No breaking change since the last release (oasdiff)
+        if: steps.release.outputs.spec != ''
+        uses: oasdiff/oasdiff-action/breaking@v0.0.57
+        with:
+          base: openapi-release.json
+          revision: apps/explorer-api/openapi.json
+          fail-on: WARN
+          warn-ignore: ${{ steps.release.outputs.warn_ignore }}
+
+  web-present:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      present: ${{ steps.find.outputs.present }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Look for the web UI
+        id: find
+        run: |
+          if [ -f web/package.json ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No web UI yet."
+          fi
+
+  # It runs from the moment web/package.json exists (decision 0022).
+  web:
+    needs: web-present
+    if: needs.web-present.outputs.present == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v10.3.3
+
+      - name: Start the database for tests
+        working-directory: .
+        run: docker compose up --wait test-db
+
+      # The script e2e starts the API with the fake models.
+      - name: Install explorer-api
+        working-directory: .
+        run: uv sync --package explorer-api --no-default-groups --locked
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: web/.node-version
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install the web UI
+        run: npm ci
+
+      - name: Lint and format (ESLint, Prettier)
+        run: npm run lint
+
+      - name: Typecheck with the client generated from openapi.json (tsc)
+        run: npm run typecheck
+
+      - name: Unit tests (Vitest)
+        run: npm test
+
+      - name: Chromium for Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Tests in the browser with accessibility checks (Playwright, axe)
+        run: npm run e2e
+
   # The weekly live tests must not stop unnoticed, for example when GitHub turns the
   # schedule off after 60 days without activity (decision 0021).
   live-runs:

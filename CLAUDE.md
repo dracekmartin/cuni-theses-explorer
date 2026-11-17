@@ -99,12 +99,14 @@ and ideation documents live in the sibling repo `dracekmartin/diplomkaManagement
 - **External services in tests:** an HTTP adapter creates its client itself, with its
   timeouts, and takes only a transport from its caller. Its tests pass `MockTransport`
   with responses written by hand, never copied from DSpace or e-INFRA. A test that calls
-  a real service is marked `network` and runs only with the option `--network` (decision
-  0020).
+  a real service is marked `network` (decision 0020).
 - **Models and rankings:** a program that uses a model checks the reference outputs of
   `explorer_models_local` when it starts and exits with 78 when they differ. A change of
   a ranking needs a new version of the step that causes it. A setup rewritten from
   experiment 05 carries a passed regression with its fingerprint (decision 0021).
+- **API and web UI:** `apps/explorer-api/openapi.json` is generated from the code, never
+  edited by hand. A breaking change of a released API needs a new path version (`/v2`).
+  The web UI lives in `web/`, outside the workspace (decision 0022).
 
 ## Quality gates
 
