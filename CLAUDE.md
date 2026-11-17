@@ -35,7 +35,11 @@ and ideation documents live in the sibling repo `dracekmartin/diplomkaManagement
   changed lines of Markdown, comments, docstrings and commit subjects. A listed word that
   is the right term in its place keeps `prose: allow` on its line (decision 0024).
 - **Commits:** Conventional Commits, `feat|fix|docs|chore|refactor|test|ci(scope): description`,
-  several scopes as `feat(eval, experiments)`. A git hook in `tools/hooks/` and CI check it.
+  one line without a body. `main` stays linear: a commit lands directly or by a fast-forward
+  from a worktree branch, never by a merge commit. The scope names the folders that the
+  commit changes, several as `feat(eval, experiments)`, and a change of the setup of the
+  whole repository may have none. Pull requests come only from Dependabot and are squashed.
+  A git hook in `tools/hooks/` and CI check the form (decision 0025).
 - **Naming:** domain terms are shared between code, diagrams and the thesis text (Thesis,
   Chunk, Searcher, Setup, Step, EmbeddingProvider, TopicMap, Overview). Introduce new
   domain terms consciously and document them in `docs/architecture.md`.

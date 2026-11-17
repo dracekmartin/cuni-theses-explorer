@@ -1,5 +1,7 @@
 # Only the database for tests so far. The services of the system come with the application
 # (decision 0002) and their database uses the same image.
+# One project for every worktree, so they share one test-db on its port (decision 0025).
+name: cuni-theses-explorer
 services:
   # Data in memory and a port of its own, so tests never touch the data of development
   # (decision 0020).

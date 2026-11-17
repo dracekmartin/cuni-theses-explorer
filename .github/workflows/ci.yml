@@ -4,6 +4,13 @@ on:
   push:
     branches: [main]
   pull_request:
+    # Also when the title changes, because the title becomes the commit on main (decision 0025).
+    types: [opened, synchronize, reopened, edited]
+
+# A newer run of the same pull request cancels the older one, a push to main never does.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   quality:
@@ -254,6 +261,9 @@ jobs:
           fetch-depth: 0
 
       - name: Commit messages and the prose of the changed lines
+        env:
+          # Through the environment, so a title cannot run as part of the script.
+          TITLE: ${{ github.event.pull_request.title }}
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             git fetch origin "${{ github.base_ref }}"
@@ -269,11 +279,18 @@ jobs:
             head="${{ github.sha }}"
             base="$head^"
           fi
-          # The rules of the git hooks (decisions 0023 and 0024). Without pipefail, a failed
-          # git log would hand over no subjects and pass.
+          # The rules of the git hooks (decisions 0023 to 0025). Without pipefail, a failed
+          # git log would hand over no messages and pass.
           set -o pipefail
           status=0
-          git log --format=%s "$base..$head" | python3 tools/commit_message.py - || status=1
-          git log --format=%s "$base..$head" | python3 tools/prose.py --subjects - || status=1
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # A pull request is squashed, so its title is the only message that reaches main.
+            printf '%s' "$TITLE" | python3 tools/commit_message.py - --base "$base" || status=1
+            printf '%s\n' "$TITLE" | python3 tools/prose.py --subjects - || status=1
+          else
+            git log --format=%B%x00 "$base..$head" \
+              | python3 tools/commit_message.py - --base "$base" || status=1
+            git log --format=%s "$base..$head" | python3 tools/prose.py --subjects - || status=1
+          fi
           python3 tools/prose.py --diff "$base" "$head" || status=1
           exit $status

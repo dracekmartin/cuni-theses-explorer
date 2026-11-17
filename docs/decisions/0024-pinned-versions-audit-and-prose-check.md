@@ -1,6 +1,7 @@
 # 0024: Pinned versions, the audit of dependencies and the check of prose
 
-Date: 2026-11-17. Status: accepted.
+Date: 2026-11-17. Status: accepted. Since decision 0025, CI checks the title of a pull
+request instead of its commits.
 
 ## Context
 

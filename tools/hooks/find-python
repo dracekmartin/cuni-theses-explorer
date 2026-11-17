@@ -1,0 +1,17 @@
+#!/bin/sh
+# Prints a Python with the tools of the repository: the one of this worktree, or the one of
+# the main worktree when this one has none yet, such as a worktree of /stream or /wtm
+# (decision 0025). A worktree then needs no uv sync before its first commit.
+here=$(git rev-parse --show-toplevel)
+main=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
+for root in "$here" "$main"; do
+	for python in "$root/.venv/Scripts/python.exe" "$root/.venv/bin/python"; do
+		# The answer counts, not the exit code: sh runs an empty file as a script that passes.
+		if [ -x "$python" ] && [ "$("$python" -c "import ruff; print('ok')" 2>/dev/null)" = ok ]; then
+			echo "$python"
+			exit 0
+		fi
+	done
+done
+echo "No .venv with the tools here or in the main worktree. Run uv sync." >&2
+exit 1

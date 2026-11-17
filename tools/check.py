@@ -164,17 +164,21 @@ def staged_run() -> list[Step | Check]:
     listed = _git("diff", "--cached", "--name-only", "-z", "--diff-filter=ACMR")
     files = python_files([name for name in listed.split("\0") if name])
     steps: list[Step | Check] = [Step("prose", [sys.executable, PROSE, "--staged"])]
+    # Through the Python that runs the hook, which may belong to the main worktree.
+    ruff = [sys.executable, "-m", "ruff"]
     if files:
         steps += [
-            Step("format (ruff)", ["ruff", "format", "--check", "--force-exclude", "--", *files]),
-            Step("lint (ruff)", ["ruff", "check", "--force-exclude", "--", *files]),
+            Step("format (ruff)", [*ruff, "format", "--check", "--force-exclude", "--", *files]),
+            Step("lint (ruff)", [*ruff, "check", "--force-exclude", "--", *files]),
         ]
     return steps
 
 
 def non_executable_hooks() -> list[str]:
     """Return the hooks that git on Linux would skip, because git keeps them without +x."""
-    lines = _git("ls-files", "--stage", "--", HOOKS).splitlines()
+    # Only the hooks themselves, the helper find-python runs through sh.
+    paths = [f"{HOOKS}/{name}" for name in ("pre-commit", "commit-msg")]
+    lines = _git("ls-files", "--stage", "--", *paths).splitlines()
     hooks = [line.split("\t", 1)[1] for line in lines if not line.startswith("100755 ")]
     if not hooks:
         return []
@@ -182,20 +186,30 @@ def non_executable_hooks() -> list[str]:
     return [f"not executable in git: {names}. Run git update-index --chmod=+x {names}, commit"]
 
 
-def turn_on_hooks() -> None:
-    """Point git at the hooks of the repository, unless CI runs the script."""
+GIT_SETTINGS = {
+    "core.hooksPath": (HOOKS, f"git now runs the hooks in {HOOKS}."),
+    # A pull only fast-forwards, which works next to the unfinished work of another chat and
+    # never creates a merge commit (decision 0025).
+    "pull.rebase": ("false", "git pull no longer rebases."),
+    "pull.ff": ("only", "git pull now only fast-forwards."),
+}
+
+
+def configure_git() -> None:
+    """Set the git settings of the repository, unless CI runs the script."""
     if os.environ.get("GITHUB_ACTIONS"):
         return
-    current = subprocess.run(
-        ["git", "config", "--get", "core.hooksPath"],
-        capture_output=True,
-        check=False,
-        cwd=ROOT,
-        encoding="utf-8",
-    ).stdout.strip()
-    if current != HOOKS:
-        subprocess.run(["git", "config", "core.hooksPath", HOOKS], check=True, cwd=ROOT)
-        print(f"git now runs the hooks in {HOOKS}.")
+    for key, (value, message) in GIT_SETTINGS.items():
+        current = subprocess.run(
+            ["git", "config", "--local", "--get", key],
+            capture_output=True,
+            check=False,
+            cwd=ROOT,
+            encoding="utf-8",
+        ).stdout.strip()
+        if current != value:
+            subprocess.run(["git", "config", "--local", key, value], check=True, cwd=ROOT)
+            print(message)
 
 
 def _passes(step: Step | Check) -> bool:
@@ -238,7 +252,7 @@ def main() -> int:
     elif options.audit:
         failed = run([Step("known vulnerabilities (uv audit)", audit_args())], verbose=True)
     else:
-        turn_on_hooks()
+        configure_git()
         steps = [*full_run(options.fix), Check("git hooks are executable", non_executable_hooks)]
         failed = run(steps, verbose=True)
     if failed:

@@ -1,4 +1,5 @@
 #!/bin/sh
-# Reads the files of the commit from disk and stashes nothing, so the work of another chat
-# in the same tree stays untouched (decision 0023).
-exec uv run --no-sync python tools/check.py --staged
+# Reads the files of the commit and stashes nothing, so the work of another chat in the same
+# tree stays untouched (decision 0023).
+python=$(sh tools/hooks/find-python) || exit 1
+exec "$python" tools/check.py --staged

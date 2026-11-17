@@ -1,7 +1,8 @@
 # 0023: Git hooks and one command for the checks
 
 Date: 2026-11-17. Status: accepted. Decision 0024 adds the check of prose to both hooks and
-to the job `commit-messages`, and `uv audit` to `tools/check.py` and `live.yml`.
+to the job `commit-messages`, and `uv audit` to `tools/check.py` and `live.yml`. Decision
+0025 limits a message to its subject and a scope to the names of folders.
 
 ## Context
 

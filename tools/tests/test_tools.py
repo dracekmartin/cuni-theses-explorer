@@ -1,4 +1,5 @@
 import importlib.util
+import io
 from pathlib import Path
 from types import ModuleType
 
@@ -255,3 +256,54 @@ def test_a_commented_npm_entry_does_not_count(tmp_path: Path) -> None:
         "updates:\n  # - package-ecosystem: npm\n", encoding="utf-8"
     )
     assert len(check.dependabot_covers_web(tmp_path)) == 1
+
+
+def test_a_message_has_only_its_subject() -> None:
+    assert commit_message.problems("feat: x\n\n# a comment of git\n", set()) == []
+    found = commit_message.problems("feat: x\n\nWhy it was needed.\n", set())
+    assert found == ["The message has more than its subject: feat: x"]
+
+
+def test_a_scope_names_a_folder_of_the_repository_or_deps() -> None:
+    known = {"eval", "experiments"}
+    assert commit_message.problems("feat(eval, experiments): x\n", known) == []
+    assert commit_message.problems("chore(deps): bump ruff\n", known) == []
+    assert commit_message.problems("feat(expriments): x\n", known) == [
+        "No folder of the repository is called expriments: feat(expriments): x"
+    ]
+
+
+def test_messages_on_standard_input_are_separated_by_nul(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("sys.stdin", io.StringIO("fix: one\n\0fix: two\n\nA body.\n\0"))
+    assert commit_message.main(["-"]) == 1
+    monkeypatch.setattr("sys.stdin", io.StringIO("fix: one\n\0docs(tools): two\n\0"))
+    assert commit_message.main(["-"]) == 0
+
+
+def test_the_folders_come_from_every_level_of_the_tree() -> None:
+    assert {"tools", "hooks", "decisions"} <= commit_message.folders(["HEAD"])
+
+
+def test_dependabot_scopes_pass() -> None:
+    assert commit_message.problems("chore(deps-dev): bump vite from 5.0.0 to 5.1.0\n", set()) == []
+
+
+def test_every_line_of_a_stored_message_counts(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("sys.stdin", io.StringIO("fix: a\n\n# a body after all\n\0"))
+    assert commit_message.main(["-"]) == 1
+    monkeypatch.setattr("sys.stdin", io.StringIO("# 12 wip\nfix: a\n\0"))
+    assert commit_message.main(["-"]) == 1
+
+
+def test_another_comment_character_of_the_editor_is_skipped() -> None:
+    message = "fix: a\n\n; Please enter the commit message for your changes.\n"
+    assert commit_message.problems(message, set(), ";") == []
+
+
+def test_the_folders_do_not_depend_on_the_current_folder(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(TOOLS)
+    assert {"tools", "decisions", "experiments"} <= commit_message.folders(["HEAD"])
