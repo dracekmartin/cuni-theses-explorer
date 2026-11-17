@@ -91,7 +91,8 @@ or doctoral thesis that a rigorous thesis grew from, and a failed attempt at a d
 from under their heading in the text. Some faculties put the abstract at the end of the
 thesis. The other 682 cut abstracts are worded differently in the text and stay cut. The
 script also removes HTML entities, title pages and keywords that DSpace copied into an
-abstract.
+abstract. It leaves a heading such as "English summary" at the start of 12 abstracts of
+11 theses, and 4 theses keep a German abstract in the English field, as DSpace has it.
 
 The test part of v2 has 200 new targets, 100 Czech, 60 English and 40 Slovak theses, with
 the query types of v1 in Czech and English (`generate_v2_queries.py`). Queries in Slovak
@@ -133,17 +134,20 @@ thesis. Neural machine translation and pressure ulcers had none in v1 either. Th
 relevant thesis of v1 on the protection of an employee at dismissal has no abstract and
 left the corpus. The only one on the New Testament parables, whose abstract the judge of v1
 saw whole, got grade 1 when it was judged again. A blind sample of 150 pairs, 50 for each
-LLM grade, waits for a person to grade on the page `data/eval-v2/validation-dev.html`.
-`topics.py agreement` then also prints the agreement reweighted to the share of each grade
-in the pool, and in how many pairs of the sample the LLM grades higher and lower than the
-person, with the p-value of a sign test. The judgments of the dev part stand if the
+LLM grade, is ready for a human check on the page `data/eval-v2/validation-dev.html`. The
+check is postponed to the version over the whole university (v3), because the grader
+lacks expertise in most of the fields and v3 needs a check of its own. In the 30 pairs
+graded so far, the person and the LLM gave the same grade 24 times, too few pairs to rely
+on. `topics.py agreement` prints the agreement on the sample and reweighted to the share of
+each grade in the pool, and in how many pairs of the sample the LLM grades higher and
+lower than the person, with the p-value of a sign test. Checked judgments stand if the
 weighted kappa reweighted to the pool is at least 0.6, and if the sign test does not show
 that the LLM grades higher, or lower, more often than chance would (p of at least 0.05).
-Otherwise the dev part is judged again with a changed prompt. The sign test counts the
-pairs of the sample without reweighting. Where the LLM gave grade 0, the person can only
-grade higher, and 58 % of the pool has grade 0: if the LLM erred equally often at each
-grade, and both ways at grade 1, the reweighted share of lower LLM grades would be 71 %.
-Both limits were set on 2026-11-17, when 30 of the 150 pairs had been graded.
+Otherwise the part is judged again with a changed prompt. The sign test counts the pairs
+of the sample without reweighting. Where the LLM gave grade 0, the person can only grade
+higher, and 58 % of the pool has grade 0: if the LLM erred equally often at each grade,
+and both ways at grade 1, the reweighted share of lower LLM grades would be 71 %. Both
+limits were set on 2026-11-17, when 30 of the 150 pairs had been graded.
 
 Reproduce v0: `build_pilot_corpus.py`, `generate_queries.py` and `topics.py add`, then the
 setups of experiment 03, then `topics.py judge` (needs `EINFRA_API_KEY` in `.env`). The
