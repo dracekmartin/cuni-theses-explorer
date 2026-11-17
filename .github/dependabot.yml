@@ -1,0 +1,25 @@
+# Dependabot moves pinned versions that nobody would move by hand (decision 0024). Python
+# packages stay out: the experiments keep the versions of their results, and the tools are
+# raised deliberately (decision 0012). The web UI adds npm with its package.json.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    # One pull request for all actions.
+    groups:
+      actions:
+        patterns: ["*"]
+    # The form of decision 0023: chore(deps): ...
+    commit-message:
+      prefix: chore
+      include: scope
+
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: chore
+      include: scope

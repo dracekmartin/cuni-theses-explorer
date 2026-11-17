@@ -1,6 +1,6 @@
 # 0021: Models, live services and regression under the control of CI
 
-Date: 2026-11-16. Status: accepted.
+Date: 2026-11-16. Status: accepted. Since decision 0024 `live.yml` also runs `uv audit`.
 
 ## Context
 

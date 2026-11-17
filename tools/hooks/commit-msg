@@ -1,3 +1,4 @@
 #!/bin/sh
-# The same check that CI runs over every pushed commit (decision 0023).
-exec uv run --no-sync python tools/commit_message.py "$1"
+# The same checks that CI runs over every pushed commit (decisions 0023 and 0024).
+uv run --no-sync python tools/commit_message.py "$1" &&
+	exec uv run --no-sync python tools/prose.py --message "$1"

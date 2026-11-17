@@ -1,0 +1,3 @@
+# Known vulnerabilities that tools/check.py lets pass while no fixed version exists
+# (decision 0024). One per line: the ID that uv audit prints, then the reason. Once a fix
+# is published, the check fails again until the dependency moves to it.

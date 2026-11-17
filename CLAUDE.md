@@ -31,7 +31,9 @@ and ideation documents live in the sibling repo `dracekmartin/diplomkaManagement
   a press release. Plain sentences, concrete statements, no filler, no AI-flavored
   rhetorical tics (such as "X matters:", "not just X, it's Y", "One shot, not a chat").
   No em dashes anywhere; restructure the sentence or use a comma, colon, or parentheses.
-  If a sentence sounds like generated boilerplate, rewrite it.
+  If a sentence sounds like generated boilerplate, rewrite it. `tools/prose.py` checks the
+  changed lines of Markdown, comments, docstrings and commit subjects. A listed word that
+  is the right term in its place keeps `prose: allow` on its line (decision 0024).
 - **Commits:** Conventional Commits, `feat|fix|docs|chore|refactor|test|ci(scope): description`,
   several scopes as `feat(eval, experiments)`. A git hook in `tools/hooks/` and CI check it.
 - **Naming:** domain terms are shared between code, diagrams and the thesis text (Thesis,

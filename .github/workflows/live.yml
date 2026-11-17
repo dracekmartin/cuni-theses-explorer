@@ -1,6 +1,7 @@
 name: Live services
 
-# Tests marked network call DSpace UK and e-INFRA once a week (decision 0021).
+# Tests marked network call DSpace UK and e-INFRA once a week (decision 0021), and uv audit
+# looks for vulnerabilities published since the last push (decision 0024).
 on:
   schedule:
     - cron: "17 5 * * 1"
@@ -8,12 +9,12 @@ on:
 
 jobs:
   network:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
-      - uses: astral-sh/setup-uv@v10.3.3
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
 
       - name: Start the database for tests
         run: docker compose up --wait test-db
@@ -34,3 +35,8 @@ jobs:
             exit 0
           fi
           exit $code
+
+      # Also after failed tests, so each check reports on its own.
+      - name: Known vulnerabilities (uv audit)
+        if: ${{ !cancelled() }}
+        run: uv run --no-sync python tools/check.py --audit

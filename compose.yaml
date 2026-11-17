@@ -4,7 +4,9 @@ services:
   # Data in memory and a port of its own, so tests never touch the data of development
   # (decision 0020).
   test-db:
-    image: pgvector/pgvector:0.8.7-pg18-trixie
+    # The digest fixes the image, which a new minor release of PostgreSQL can replace under
+    # the same tag. Dependabot moves both (decision 0024).
+    image: pgvector/pgvector:0.8.7-pg18-trixie@sha256:ab49524d18df7200b74ac9a475e1db6297fc1eb57da4c214c63d10ecc4b754fa
     profiles: ["test"]
     environment:
       POSTGRES_USER: explorer

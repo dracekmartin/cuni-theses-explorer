@@ -1,7 +1,8 @@
 # 0020: Tests with a database and HTTP
 
 Date: 2026-11-16. Status: accepted. Since decision 0021 the live tests run once a week in
-CI, and the main job leaves out only the tests marked `model`.
+CI, and the main job leaves out only the tests marked `model`. Since decision 0024 a digest
+fixes the image of `test-db` next to its tag.
 
 ## Context
 

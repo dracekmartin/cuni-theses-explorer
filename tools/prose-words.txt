@@ -1,0 +1,53 @@
+# Copy of the typography and the English part of the author's global list of words that
+# sound generated. On the notebook, tools/check.py fails when the two differ, and
+# `python tools/prose.py --update-words` copies them again (decision 0024). The format is
+# in tools/prose.py.
+[typografie]
+!—
+!--- .tex
+!; .md .tex .txt
+~pomlcka_s_mezerami (?<=[^\s|>\d])[\x20\xa0]–(?:[\x20\xa0]|\r?\n[\x20\t]*)(?=[^\s\d|]) .md .tex .txt
+~dve_pomlcky_s_mezerami (?<=[^\s|>\d-])[\x20~]--(?!-)(?:\x20|\r?\n[\x20\t]*)(?=[^\s\d|]) .md .tex .txt
+[en]
+honest
+honestly
+seamless
+seamlessly
+robust
+robustly
+leverage
+leveraging
+comprehensive
+crucial
+vital
+streamline*
+empower*
+foster*
+delve*
+load-bearing
+seam
+seams
+dogfooding
+walking skeleton
+standing criterion
+at scale
+first-class
+single source of truth
+orchestrat*
+granular
+holistic
+elegant
+elegantly
+cutting-edge
+fortnightly
+developer-friendly
+developer-facing
+saner
+it is worth noting
+it's worth noting
+importantly
+note that
+the key difference
+what matters is
+the real risk is
+in a meaningful way
