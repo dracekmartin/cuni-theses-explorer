@@ -169,3 +169,20 @@ def test_agreement_reweighted_to_the_pool() -> None:
     human = [2, 1, 0, 1]
     repeated = weighted_kappa([2, 1, 0, 0, 1], [2, 2, 0, 0, 0])
     assert weighted_kappa(human, model, weights=[1, 1, 2, 1]) == pytest.approx(repeated)
+
+
+def test_grade_shift_splits_the_disagreements_by_direction() -> None:
+    from topics import grade_shift
+
+    # The LLM grades higher once and lower three times, the last pair agrees.
+    assert grade_shift([0, 2, 2, 1, 1], [1, 1, 0, 0, 1]) == (1, 3)
+
+
+def test_sign_test_against_counts_done_by_hand() -> None:
+    from topics import sign_test
+
+    assert sign_test(3, 3) == 1.0
+    assert sign_test(0, 0) == 1.0
+    assert sign_test(5, 0) == pytest.approx(2 / 32)
+    # 12 of 15 one way: (C(15,12) + C(15,13) + C(15,14) + C(15,15)) / 2**15, twice.
+    assert sign_test(3, 12) == pytest.approx(2 * 576 / 32768)

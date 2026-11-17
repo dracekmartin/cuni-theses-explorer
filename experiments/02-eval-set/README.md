@@ -132,9 +132,18 @@ grade, and the most common change raises 0 to 1 (63 pairs). Four topics have no 
 thesis. Neural machine translation and pressure ulcers had none in v1 either. The only
 relevant thesis of v1 on the protection of an employee at dismissal has no abstract and
 left the corpus. The only one on the New Testament parables, whose abstract the judge of v1
-saw whole, got grade 1 when it was judged again. A blind sample of 150 pairs, 50 for each LLM grade, waits for a person
-to grade on the page `data/eval-v2/validation-dev.html`. `topics.py agreement` then also
-prints the agreement reweighted to the share of each grade in the pool.
+saw whole, got grade 1 when it was judged again. A blind sample of 150 pairs, 50 for each
+LLM grade, waits for a person to grade on the page `data/eval-v2/validation-dev.html`.
+`topics.py agreement` then also prints the agreement reweighted to the share of each grade
+in the pool, and in how many pairs of the sample the LLM grades higher and lower than the
+person, with the p-value of a sign test. The judgments of the dev part stand if the
+weighted kappa reweighted to the pool is at least 0.6, and if the sign test does not show
+that the LLM grades higher, or lower, more often than chance would (p of at least 0.05).
+Otherwise the dev part is judged again with a changed prompt. The sign test counts the
+pairs of the sample without reweighting. Where the LLM gave grade 0, the person can only
+grade higher, and 58 % of the pool has grade 0: if the LLM erred equally often at each
+grade, and both ways at grade 1, the reweighted share of lower LLM grades would be 71 %.
+Both limits were set on 2026-11-17, when 30 of the 150 pairs had been graded.
 
 Reproduce v0: `build_pilot_corpus.py`, `generate_queries.py` and `topics.py add`, then the
 setups of experiment 03, then `topics.py judge` (needs `EINFRA_API_KEY` in `.env`). The

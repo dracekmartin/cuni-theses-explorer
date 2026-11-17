@@ -27,7 +27,8 @@ Four steps, run in this order (EVAL_VERSION=v1 in front of each for version v1):
 
     python experiments/02-eval-set/topics.py agreement [--grades validation-grades.json]
         Compares the human grades with the LLM grades the sample recorded: exact agreement,
-        weighted kappa and the confusion matrix. Without --grades it reads the filled
+        weighted kappa, the confusion matrix and how often the LLM grades higher and lower
+        than the human, with a sign test. Without --grades it reads the filled
         validation.md of v0.
 
 For v2 every step but add takes --part dev or --part test. judge keeps the judgments the
@@ -53,6 +54,7 @@ import re
 from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
+from math import comb
 from pathlib import Path
 from typing import Any
 
@@ -489,6 +491,19 @@ def pool_weights(model: list[int], pool_grades: dict[str, int]) -> list[float]:
     return [pool_grades[str(value)] / drawn[value] for value in model]
 
 
+def grade_shift(human: list[int], model: list[int]) -> tuple[int, int]:
+    """Numbers of the pairs in which the LLM grades higher and lower than the human."""
+    higher = sum(b > a for a, b in zip(human, model, strict=True))
+    lower = sum(b < a for a, b in zip(human, model, strict=True))
+    return higher, lower
+
+
+def sign_test(higher: int, lower: int) -> float:
+    """Two-sided p-value of the exact sign test that both directions are equally likely."""
+    tail = sum(comb(higher + lower, i) for i in range(max(higher, lower), higher + lower + 1))
+    return min(1.0, 2 * tail / 2 ** (higher + lower))
+
+
 def agreement(grades_path: Path | None, part: str = "") -> None:
     if grades_path is None and VERSION != "v0":
         raise SystemExit("pass the grades saved by validation.html with --grades")
@@ -532,6 +547,12 @@ def agreement(grades_path: Path | None, part: str = "") -> None:
             for other in (0, 1, 2)
         ]
         print(f"  {value}: {row}")
+    # Not reweighted: most pairs of the pool have LLM grade 0, where the LLM can only be lower.
+    higher, lower = grade_shift(human, model)
+    print(
+        f"of {higher + lower} disagreements the LLM grades higher in {higher}, lower in "
+        f"{lower}, sign test p = {sign_test(higher, lower):.3f}"
+    )
     if pool_grades := sample.get("pool_grades"):
         weights = pool_weights(model, pool_grades)
         exact = sum(w for a, b, w in zip(human, model, weights, strict=True) if a == b)
