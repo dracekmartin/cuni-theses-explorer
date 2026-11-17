@@ -1,6 +1,7 @@
 # 0012: Code style
 
-Date: 2026-11-03. Status: accepted.
+Date: 2026-11-03. Status: accepted. Since decision 0023, ruff is pinned only in
+`uv.lock`.
 
 ## Context
 

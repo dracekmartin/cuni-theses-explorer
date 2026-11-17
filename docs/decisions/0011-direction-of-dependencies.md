@@ -1,6 +1,8 @@
 # 0011: Direction of dependencies
 
-Date: 2026-11-03, plugins dropped on 2026-11-16. Status: accepted.
+Date: 2026-11-03, plugins dropped on 2026-11-16. Status: accepted. Since decision 0023,
+deptry and import-linter run in `tools/check.py` and CI, not at commit time, and deptry
+ignores an unused dependency only in a package without modules.
 
 ## Context
 

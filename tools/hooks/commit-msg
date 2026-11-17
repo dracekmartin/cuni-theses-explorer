@@ -1,0 +1,3 @@
+#!/bin/sh
+# The same check that CI runs over every pushed commit (decision 0023).
+exec uv run --no-sync python tools/commit_message.py "$1"

@@ -1,7 +1,9 @@
 # 0003: Engineering quality and its enforcement
 
 Date: 2026-09-09. Status: accepted. Decision 0013 replaces pyright with its fork
-basedpyright, with the same modes.
+basedpyright, with the same modes. Decision 0023 replaces pre-commit with git hooks in
+`tools/hooks/`, which check only ruff and the commit message, and leaves the other checks
+to `tools/check.py` and CI.
 
 ## Context
 

@@ -32,8 +32,8 @@ and ideation documents live in the sibling repo `dracekmartin/diplomkaManagement
   rhetorical tics (such as "X matters:", "not just X, it's Y", "One shot, not a chat").
   No em dashes anywhere; restructure the sentence or use a comma, colon, or parentheses.
   If a sentence sounds like generated boilerplate, rewrite it.
-- **Commits:** Conventional Commits, `feat|fix|docs|chore|refactor|test|ci(scope): description`.
-  Enforced by a pre-commit hook; run `uv run pre-commit install` once after cloning.
+- **Commits:** Conventional Commits, `feat|fix|docs|chore|refactor|test|ci(scope): description`,
+  several scopes as `feat(eval, experiments)`. A git hook in `tools/hooks/` and CI check it.
 - **Naming:** domain terms are shared between code, diagrams and the thesis text (Thesis,
   Chunk, Searcher, Setup, Step, EmbeddingProvider, TopicMap, Overview). Introduce new
   domain terms consciously and document them in `docs/architecture.md`.
@@ -110,17 +110,11 @@ and ideation documents live in the sibling repo `dracekmartin/diplomkaManagement
 
 ## Quality gates
 
-`uv sync` installs the workspace, the tools and the experiment dependencies. Tests marked
-`db` need the database for tests in Docker. Run before pushing (CI runs the same):
-
-```sh
-docker compose up --wait test-db
-uv run ruff format --check .
-uv run ruff check .
-uv run basedpyright
-uv run lint-imports
-uv run pytest
-```
+`uv sync` installs the workspace, the tools and the experiment dependencies. Before the
+review of a change, `uv run tools/check.py --fix <files of the change>` fixes those files
+and runs the checks of the main CI job. Never let ruff fix the whole tree, another chat may
+have work in it. The script needs Docker for the database of the tests, and it turns on
+the git hooks (decision 0023).
 
 ## Quality boundary
 

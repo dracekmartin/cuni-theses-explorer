@@ -22,24 +22,10 @@ jobs:
       - name: Install the workspace, the tools and the experiment dependencies
         run: uv sync --all-packages --locked
 
-      - name: Format check (ruff)
-        run: uv run --no-sync ruff format --check .
-
-      - name: Lint (ruff)
-        run: uv run --no-sync ruff check .
-
-      - name: Typecheck (basedpyright)
-        run: uv run --no-sync basedpyright
-
-      - name: Layers inside explorer (import-linter)
-        run: uv run --no-sync lint-imports
-
-      - name: Tests (pytest) with branch coverage
-        run: uv run --no-sync coverage run -m pytest -m "not model" --durations=10
-
-      # The job models reports explorer_models_local, which only its tests run.
-      - name: Coverage of libs and apps
-        run: uv run --no-sync coverage report --omit='libs/explorer-models-local/*'
+      # The same script runs on the notebook (decision 0023): ruff, basedpyright,
+      # import-linter, deptry, and the tests without the marker model with coverage.
+      - name: The checks of tools/check.py
+        run: uv run --no-sync python tools/check.py
 
   core-without-torch:
     runs-on: ubuntu-latest
@@ -277,12 +263,7 @@ jobs:
           else
             range="-1 ${{ github.sha }}"
           fi
-          pattern='^(feat|fix|docs|chore|refactor|test|ci)(\([a-z0-9-]+\))?!?: .+'
-          fail=0
-          while IFS= read -r subject; do
-            if ! echo "$subject" | grep -Eq "$pattern"; then
-              echo "Not a conventional commit: $subject"
-              fail=1
-            fi
-          done < <(git log --format=%s $range)
-          exit $fail
+          # The rule of the git hook commit-msg (decision 0023). Without pipefail, a failed
+          # git log would hand over no subjects and pass.
+          set -o pipefail
+          git log --format=%s $range | python3 tools/commit_message.py -

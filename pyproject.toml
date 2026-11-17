@@ -69,6 +69,9 @@ convention = "google"
 # Tests use plain assert and describe themselves by their names. Test folders are not
 # packages.
 "**/tests/**" = ["S101", "INP001", "D"]
+# Scripts of the repository, not a package. They talk to the terminal and start git and
+# the checks by name (decision 0023).
+"tools/*.py" = ["INP001", "T20", "S603", "S607"]
 
 [tool.basedpyright]
 pythonVersion = "3.13"
@@ -86,7 +89,7 @@ reportIgnoreCommentWithoutRule = "error"
 reportUnnecessaryTypeIgnoreComment = "error"
 
 [tool.pytest]
-testpaths = ["experiments", "eval", "libs", "apps"]
+testpaths = ["experiments", "eval", "libs", "apps", "tools"]
 # importlib lets test files in different packages share a name.
 addopts = ["-q", "--import-mode=importlib"]
 # A marker with a typo stops the run (decision 0018). pytest is pinned in uv.lock.
@@ -148,7 +151,6 @@ dev = [
     "deptry==0.25.1",
     "hypothesis==6.170.15",
     "import-linter==2.15",
-    "pre-commit==4.6.2",
     "pytest==9.1.1",
     "pytest-timeout==2.4.0",
     "ruff==0.16.6",
